@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSM Detailed Trip Planner & Itinerary Builder</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { display: flex; height: 100vh; overflow: hidden; background-color: #f3f4f6; }
+
+    #auth-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card { background: #ffffff; padding: 30px; border-radius: 10px; width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .auth-card h2 { margin-bottom: 15px; color: #111827; text-align: center; }
+
+    #sidebar {
+      width: 480px; height: 100%; background: #ffffff; padding: 20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000;
+      display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
+    }
+
+    #map { flex: 1; height: 100%; }
+
+    .nav-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+    .nav-header a { font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 600; }
+
+    .section-title { font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-top: 4px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
+
+    .form-row { display: flex; gap: 10px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .form-group label { font-size: 0.8rem; color: #374151; font-weight: 600; }
+    .form-group input, .form-group select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; }
+
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    .checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #1f2937; cursor: pointer; }
+
+    .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background-color 0.2s; }
+    .btn-primary { background-color: #059669; color: #ffffff; width: 100%; }
+    .btn-primary:hover { background-color: #047857; }
+    .btn-secondary { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+    .btn-block { background-color: #dc2626; color: #ffffff; width: 100%; }
+    .btn-block.active { background-color: #991b1b; }
+
+    .itinerary-day { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-top: 8px; }
+    .day-header { font-weight: bold; font-size: 0.85rem; color: #0f172a; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .poi-card { padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 6px; background: #ffffff; }
+    .poi-title { font-weight: bold; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+    .poi-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; }
+    .badge-attraction { background-color: #8b5cf6; }
+    .badge-hotel { background-color: #3b82f6; }
+    .badge-petrol { background-color: #f59e0b; }
+    .badge-ev { background-color: #10b981; }
+    .badge-restaurant { background-color: #ec4899; }
+    .poi-desc { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <h2>Login Required</h2>
+      <p style="font-size:0.85rem; color:#6b7280; margin-bottom:15px; text-align:center;">Log in to use the Custom Trip Planner</p>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Email Address</label>
+          <input type="email" id="login-email" required placeholder="user@example.com" />
+        </div>
+        <div class="form-group" style="margin-bottom:15px;">
+          <label>Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="nav-header">
+      <h2>🗺️ Detailed Trip Planner</h2>
+      <a href="index.html">← Back to Navigation</a>
+    </div>
+
+    <!-- Step 1: Route Setup -->
+    <div class="section-title">1. Route Coordinates</div>
+    <div class="form-group">
+      <label>Start Location (Lat, Lon)</label>
+      <input type="text" id="trip-start" placeholder="Click map or type: 26.7132, 88.4323" />
+    </div>
+    <div class="form-group">
+      <label>Destination (Lat, Lon)</label>
+      <input type="text" id="trip-end" placeholder="Click map or type: 28.6139, 77.2090" />
+    </div>
+
+    <!-- Step 2: Trip Parameters -->
+    <div class="section-title">2. Trip Style & Logistics</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Travel Mode</label>
+        <select id="sel-mode">
+          <option value="driving">🚗 Car / Sedan</option>
+          <option value="EV">⚡ Electric Vehicle</option>
+          <option value="motorcycle">🏍️ Motorcycle</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Trip Pace</label>
+        <select id="sel-pace">
+          <option value="balanced">Balanced (~8 hrs/day)</option>
+          <option value="scenic_detours">Scenic (~6 hrs/day)</option>
+          <option value="express">Express (~10 hrs/day)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Max Detour Distance</label>
+        <select id="sel-detour">
+          <option value="15">Max 15 km off-route</option>
+          <option value="30" selected>Max 30 km off-route</option>
+          <option value="50">Max 50 km off-route</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Stay Budget</label>
+        <select id="sel-budget">
+          <option value="budget">Budget / Homestays</option>
+          <option value="medium" selected>Medium / 3-Star</option>
+          <option value="luxury">Luxury / 5-Star</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 3: POI Filter Checklist -->
+    <div class="section-title">3. Services & Attractions Along Route</div>
+    <div class="checkbox-grid">
+      <label class="checkbox-item"><input type="checkbox" id="chk-petrol" checked /> ⛽ Petrol Pumps</label>
+      <label class="checkbox-item"><input type="checkbox" id="chk-ev" /> ⚡ EV Chargers</label>
+      <label class="checkbox-item"><input type="checkbox" id="chk-hotels" checked /> 🏨 Hotels / Stays</label>
+      <label class="checkbox-item"><input type="checkbox" id="chk-food" checked /> 🍽️ Restaurants</label>
+      <label class="checkbox-item"><input type="checkbox" id="chk-heritage" checked /> 🏰 Heritage Sites</label>
+      <label class="checkbox-item"><input type="checkbox" id="chk-spiritual" checked /> 🛕 Spiritual / Temples</label>
+    </div>
+
+    <!-- Step 4: Region Block Tools -->
+    <button id="block-btn" class="btn btn-block" onclick="toggleBlockMode()">🚫 Draw Blocked Region</button>
+    <button class="btn btn-secondary" onclick="clearBlockedRegions()">Clear Blocked Regions</button>
+
+    <button class="btn btn-primary" onclick="generateTripPlan()" style="margin-top:4px;">Build Customized Itinerary</button>
+
+    <div id="trip-summary"></div>
+    <div id="itinerary-list"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const API_BASE_URL = "http://localhost:8000/api/v1";
+    let activeToken = localStorage.getItem("jwt_token") || null;
+    let map, routeLayer = null, poiMarkers = [], blockedRectangles = [], blockedBoxes = [];
+    let isBlockMode = false, blockStartCorner = null;
+
+    window.onload = () => {
+      initMap();
+      if (activeToken) document.getElementById("auth-overlay").style.display = "none";
+    };
+
+    function initMap() {
+      map = L.map('map').setView([22.5, 82.5], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        if (isBlockMode) {
+          handleBlockClick(e.latlng);
+          return;
+        }
+
+        const coords = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        const startInput = document.getElementById("trip-start");
+        const endInput = document.getElementById("trip-end");
+
+        if (!startInput.value.trim()) {
+          startInput.value = coords;
+        } else {
+          endInput.value = coords;
+        }
+      });
+    }
+
+    function toggleBlockMode() {
+      isBlockMode = !isBlockMode;
+      const btn = document.getElementById('block-btn');
+      btn.classList.toggle('active', isBlockMode);
+      btn.innerText = isBlockMode ? "Click 2 Points on Map to Block Area" : "🚫 Draw Blocked Region";
+      blockStartCorner = null;
+    }
+
+    function handleBlockClick(latlng) {
+      if (!blockStartCorner) {
+        blockStartCorner = latlng;
+      } else {
+        const bounds = L.latLngBounds(blockStartCorner, latlng);
+        const rect = L.rectangle(bounds, { color: '#dc2626', weight: 2, fillColor: '#ef4444', fillOpacity: 0.4 }).addTo(map);
+        blockedRectangles.push(rect);
+
+        blockedBoxes.push({
+          min_lat: Math.min(blockStartCorner.lat, latlng.lat),
+          min_lon: Math.min(blockStartCorner.lng, latlng.lng),
+          max_lat: Math.max(blockStartCorner.lat, latlng.lat),
+          max_lon: Math.max(blockStartCorner.lng, latlng.lng)
+        });
+
+        toggleBlockMode();
+      }
+    }
+
+    function clearBlockedRegions() {
+      blockedRectangles.forEach(rect => map.removeLayer(rect));
+      blockedRectangles = [];
+      blockedBoxes = [];
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Login failed');
+
+        activeToken = data.access_token;
+        localStorage.setItem("jwt_token", activeToken);
+        document.getElementById("auth-overlay").style.display = "none";
+      } catch (err) { alert(err.message); }
+    }
+
+    async function generateTripPlan() {
+      if (!activeToken) {
+        document.getElementById("auth-overlay").style.display = "flex";
+        return;
+      }
+
+      const startInputVal = document.getElementById("trip-start").value.trim();
+      const endInputVal = document.getElementById("trip-end").value.trim();
+
+      const startVal = startInputVal.split(",").map(p => parseFloat(p.trim()));
+      const endVal = endInputVal.split(",").map(p => parseFloat(p.trim()));
+
+      if (startVal.length !== 2 || endVal.length !== 2 || isNaN(startVal[0]) || isNaN(endVal[0])) {
+        alert("Please click the map or enter valid Start and End coordinates.");
+        return;
+      }
+
+      // Collect detailed interests
+      const interests = [];
+      if (document.getElementById("chk-heritage").checked) interests.push("heritage");
+      if (document.getElementById("chk-spiritual").checked) interests.push("spiritual");
+
+      const payload = {
+        start: { latitude: startVal[0], longitude: startVal[1], name: "Start" },
+        end: { latitude: endVal[0], longitude: endVal[1], name: "Destination" },
+        preferences: {
+          travel_mode: document.getElementById("sel-mode").value,
+          trip_pace: document.getElementById("sel-pace").value,
+          max_detour_km: parseFloat(document.getElementById("sel-detour").value),
+          budget_level: document.getElementById("sel-budget").value,
+          interests: interests,
+          include_petrol_pumps: document.getElementById("chk-petrol").checked,
+          include_ev_chargers: document.getElementById("chk-ev").checked,
+          include_hotels: document.getElementById("chk-hotels").checked,
+          include_restaurants: document.getElementById("chk-food").checked,
+          include_attractions: document.getElementById("chk-heritage").checked || document.getElementById("chk-spiritual").checked
+        },
+        avoid_boxes: blockedBoxes
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/trip/plan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${activeToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem("jwt_token");
+          activeToken = null;
+          document.getElementById("auth-overlay").style.display = "flex";
+          throw new Error("Session expired. Log in again.");
+        }
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "Failed to plan trip");
+        }
+
+        const data = await response.json();
+        renderTripOnMap(data);
+
+      } catch (err) { alert(`Trip Planning Error: ${err.message}`); }
+    }
+
+    function renderTripOnMap(data) {
+      if (routeLayer) map.removeLayer(routeLayer);
+      poiMarkers.forEach(m => map.removeLayer(m));
+      poiMarkers = [];
+
+      routeLayer = L.geoJSON(data.route_geometry, {
+        style: { color: '#059669', weight: 6, opacity: 0.8 }
+      }).addTo(map);
+
+      // Summary Header
+      document.getElementById("trip-summary").innerHTML = `
+        <div style="background:#ecfdf5; padding:12px; border-radius:6px; border:1px solid #a7f3d0; margin-top:10px;">
+          <h4 style="color:#065f46;">${data.title}</h4>
+          <p style="font-size:0.8rem; color:#047857; margin-top:4px;">
+            Distance: <strong>${data.total_distance_km} km</strong> | Drive Time: <strong>${data.total_duration_hours} hrs</strong> | Suggested Span: <strong>${data.suggested_days} Days</strong>
+          </p>
+        </div>
+      `;
+
+      // Itinerary List
+      const container = document.getElementById("itinerary-list");
+      container.innerHTML = '<h4 style="margin-top:12px;">Day-by-Day Itinerary:</h4>';
+
+      data.itinerary.forEach(daySeg => {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "itinerary-day";
+        
+        let stopsHtml = '';
+        if (daySeg.suggested_stops.length === 0) {
+          stopsHtml = '<div style="font-size:0.75rem; color:#64748b;">Direct transit day on highway network.</div>';
+        } else {
+          daySeg.suggested_stops.forEach(poi => {
+            let badgeClass = "badge-attraction";
+            let iconSymbol = "🏰";
+            if (poi.category === "hotel") { badgeClass = "badge-hotel"; iconSymbol = "🏨"; }
+            if (poi.category === "petrol_pump") { badgeClass = "badge-petrol"; iconSymbol = "⛽"; }
+            if (poi.category === "ev_charger") { badgeClass = "badge-ev"; iconSymbol = "⚡"; }
+            if (poi.category === "restaurant") { badgeClass = "badge-restaurant"; iconSymbol = "🍽️"; }
+
+            stopsHtml += `
+              <div class="poi-card">
+                <div class="poi-title">
+                  <span>${iconSymbol} ${poi.name}</span>
+                  <span class="poi-badge ${badgeClass}">${poi.category.replace('_', ' ')}</span>
+                </div>
+                <div class="poi-desc">${poi.description} (Detour: +${poi.detour_distance_km} km)</div>
+              </div>
+            `;
+
+            // Add Map Marker
+            const marker = L.marker([poi.latitude, poi.longitude])
+              .bindPopup(`<b>${iconSymbol} ${poi.name}</b><br>${poi.description}<br><small>Detour: +${poi.detour_distance_km} km</small>`)
+              .addTo(map);
+            poiMarkers.push(marker);
+          });
+        }
+
+        dayDiv.innerHTML = `
+          <div class="day-header">
+            <span>${daySeg.title}</span>
+            <span style="color:#059669;">${daySeg.suggested_stops.length} Stops</span>
+          </div>
+          ${stopsHtml}
+        `;
+        container.appendChild(dayDiv);
+      });
+
+      map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+    }
+  </script>
+</body>
+</html>

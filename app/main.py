@@ -4,8 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routes import auth, route, admin
-
+from app.routes import auth, route, admin, trip  
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
@@ -29,6 +28,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(route.router)
 app.include_router(admin.router)
+app.include_router(trip.router)
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():
