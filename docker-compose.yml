@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: osm_route_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB_NAME=route_planner_db
+      - JWT_SECRET_KEY=production_ultra_secure_jwt_secret_key_12345
+      - PEPPER_KEY=production_static_sha256_pepper_secret
+      - OSRM_BASE_URL=http://router.project-osrm.org
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7.0
+    container_name: osm_mongo_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

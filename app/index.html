@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSM Route Planner - Multi-Route, Weather & Region Blocking</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { display: flex; height: 100vh; overflow: hidden; background-color: #f3f4f6; }
+
+    #auth-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card { background: #ffffff; padding: 30px; border-radius: 10px; width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .auth-card h2 { margin-bottom: 15px; color: #111827; text-align: center; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.85rem; color: #374151; margin-bottom: 4px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
+
+    #sidebar {
+      width: 420px; height: 100%; background: #ffffff; padding: 20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000;
+      display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+    }
+
+    #map { flex: 1; height: 100%; }
+
+    .user-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    .stop-group { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .stop-group input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
+
+    .btn { padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background-color 0.2s; }
+    .btn-primary { background-color: #2563eb; color: #ffffff; width: 100%; }
+    .btn-primary:hover { background-color: #1d4ed8; }
+    .btn-secondary { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+    .btn-block { background-color: #dc2626; color: #ffffff; width: 100%; }
+    .btn-block.active { background-color: #991b1b; }
+    .btn-danger { background-color: #ef4444; color: #ffffff; padding: 10px 12px; }
+    .auth-toggle { text-align: center; margin-top: 12px; font-size: 0.85rem; color: #2563eb; cursor: pointer; }
+
+    #routes-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .route-card { padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; background-color: #fafafa; }
+    .route-card.selected { border-color: #2563eb; background-color: #eff6ff; }
+    .route-card-title { font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .route-color-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .route-details { font-size: 0.85rem; color: #4b5563; margin-top: 4px; }
+    
+    .weather-widget { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 0.8rem; color: #334155; }
+    .weather-item { display: flex; justify-content: space-between; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <div id="auth-overlay">
+    <div class="auth-card" id="login-card">
+      <h2>Login to Route Planner</h2>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" required placeholder="user@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+      <div class="auth-toggle" onclick="toggleAuthMode('register')">Don't have an account? Register</div>
+    </div>
+
+    <div class="auth-card" id="register-card" style="display: none;">
+      <h2>Create Account</h2>
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" required placeholder="Chetan Chhetri" />
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="tel" id="reg-mobile" required placeholder="+919876543210" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" required placeholder="user@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" required minlength="8" placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary">Register Account</button>
+      </form>
+      <div class="auth-toggle" onclick="toggleAuthMode('login')">Already registered? Sign In</div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="user-header">
+      <div>
+        <h3 id="user-display-email">Route Dashboard</h3>
+        <span style="font-size: 0.75rem; color: #16a34a;">● Session Authenticated</span>
+      </div>
+      <button class="btn btn-secondary" onclick="logout()" style="padding: 6px 10px; font-size: 0.8rem;">Logout</button>
+    </div>
+
+    <div id="stops-container">
+      <div class="stop-group">
+        <input type="text" class="stop-coords" placeholder="Start (e.g., 26.685190, 88.325272)" />
+      </div>
+      <div class="stop-group">
+        <input type="text" class="stop-coords" placeholder="Destination (e.g., 26.769476, 88.376534)" />
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="addStopInput()">+ Add Intermediate Stop</button>
+    <button id="block-btn" class="btn btn-block" onclick="toggleBlockMode()">🚫 Draw Blocked Region</button>
+    <button class="btn btn-secondary" onclick="clearBlockedRegions()">Clear Blocked Regions</button>
+    <button class="btn btn-primary" onclick="calculateRoutes()">Find Routes & Weather</button>
+
+    <div id="routes-list"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const API_BASE_URL = "http://localhost:8000/api/v1";
+    let activeToken = localStorage.getItem("jwt_token") || null;
+    let map, mapMarkers = [], routeLayers = [], routesData = [], blockedRectangles = [], blockedBoxes = [];
+    let isBlockMode = false, blockStartCorner = null;
+    const ROUTE_COLORS = ['#2563eb', '#dc2626', '#059669'];
+
+    window.onload = () => {
+      initMap();
+      if (activeToken) document.getElementById("auth-overlay").style.display = "none";
+    };
+
+    function initMap() {
+      map = L.map('map').setView([26.7132, 88.4323], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        if (isBlockMode) {
+          handleBlockClick(e.latlng);
+          return;
+        }
+
+        const coords = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        const inputs = document.querySelectorAll('.stop-coords');
+        let set = false;
+        for (let input of inputs) {
+          if (!input.value.trim()) { input.value = coords; set = true; break; }
+        }
+        if (!set) addStopInput(coords);
+      });
+    }
+
+    function toggleBlockMode() {
+      isBlockMode = !isBlockMode;
+      const btn = document.getElementById('block-btn');
+      btn.classList.toggle('active', isBlockMode);
+      btn.innerText = isBlockMode ? "Click 2 Points on Map to Block Area" : "🚫 Draw Blocked Region";
+      blockStartCorner = null;
+    }
+
+    function handleBlockClick(latlng) {
+      if (!blockStartCorner) {
+        blockStartCorner = latlng;
+      } else {
+        const bounds = L.latLngBounds(blockStartCorner, latlng);
+        const rect = L.rectangle(bounds, { color: '#dc2626', weight: 2, fillColor: '#ef4444', fillOpacity: 0.4 }).addTo(map);
+        blockedRectangles.push(rect);
+
+        blockedBoxes.push({
+          min_lat: Math.min(blockStartCorner.lat, latlng.lat),
+          min_lon: Math.min(blockStartCorner.lng, latlng.lng),
+          max_lat: Math.max(blockStartCorner.lat, latlng.lat),
+          max_lon: Math.max(blockStartCorner.lng, latlng.lng)
+        });
+
+        toggleBlockMode();
+      }
+    }
+
+    function clearBlockedRegions() {
+      blockedRectangles.forEach(rect => map.removeLayer(rect));
+      blockedRectangles = [];
+      blockedBoxes = [];
+    }
+
+    function toggleAuthMode(mode) {
+      document.getElementById('login-card').style.display = mode === 'login' ? 'block' : 'none';
+      document.getElementById('register-card').style.display = mode === 'register' ? 'block' : 'none';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Login failed');
+
+        activeToken = data.access_token;
+        localStorage.setItem("jwt_token", activeToken);
+        document.getElementById("auth-overlay").style.display = "none";
+        document.getElementById("user-display-email").innerText = email;
+      } catch (err) { alert(err.message); }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById("reg-name").value;
+      const mobile_number = document.getElementById("reg-mobile").value;
+      const email = document.getElementById("reg-email").value;
+      const password = document.getElementById("reg-password").value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, mobile_number, email, password, is_admin: false })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Registration failed');
+
+        alert("Registration successful! Logging in...");
+        document.getElementById("login-email").value = email;
+        document.getElementById("login-password").value = password;
+        handleLogin(e);
+      } catch (err) { alert(err.message); }
+    }
+
+    function logout() {
+      localStorage.removeItem("jwt_token");
+      activeToken = null;
+      document.getElementById("auth-overlay").style.display = "flex";
+    }
+
+    function addStopInput(value = '') {
+      const container = document.getElementById('stops-container');
+      const div = document.createElement('div');
+      div.className = 'stop-group';
+      div.innerHTML = `
+        <input type="text" class="stop-coords" placeholder="Intermediate Stop (lat, lon)" value="${value}" />
+        <button class="btn btn-danger" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.insertBefore(div, container.lastElementChild);
+    }
+
+    async function calculateRoutes() {
+      if (!activeToken) { alert("Please log in."); logout(); return; }
+
+      const inputs = document.querySelectorAll('.stop-coords');
+      const coordinates = [];
+      inputs.forEach(input => {
+        const val = input.value.trim();
+        if (val) {
+          const parts = val.split(',').map(p => parseFloat(p.trim()));
+          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) coordinates.push(parts);
+        }
+      });
+
+      if (coordinates.length < 2) { alert("Please enter at least 2 valid coordinates."); return; }
+
+      const payload = {
+        start: { latitude: coordinates[0][0], longitude: coordinates[0][1] },
+        end: { latitude: coordinates[coordinates.length - 1][0], longitude: coordinates[coordinates.length - 1][1] },
+        stops: coordinates.slice(1, -1).map(c => ({ latitude: c[0], longitude: c[1] })),
+        avoid_boxes: blockedBoxes,
+        round_trip: false
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/routes/optimize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeToken}` },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.detail || "FastAPI Backend failed");
+        }
+        
+        const data = await response.json();
+
+        routesData = data.routes.map((route, idx) => ({
+          title: route.title,
+          distance: route.total_distance_meters,
+          duration: route.total_duration_seconds,
+          geometry: route.geometry_geojson,
+          ordered_waypoints: route.ordered_waypoints,
+          color: ROUTE_COLORS[idx] || '#6b7280'
+        }));
+
+        renderMultiRoutes(coordinates);
+      } catch (err) { alert(`Routing Error: ${err.message}`); }
+    }
+
+    function renderMultiRoutes(userCoordinates) {
+      routeLayers.forEach(l => map.removeLayer(l));
+      mapMarkers.forEach(m => map.removeLayer(m));
+      routeLayers = []; mapMarkers = [];
+
+      const container = document.getElementById('routes-list');
+      container.innerHTML = '<h4>Available Alternatives:</h4>';
+
+      routesData.forEach((route, idx) => {
+        const isSelected = idx === 0;
+        const layer = L.geoJSON(route.geometry, {
+          style: { color: route.color, weight: isSelected ? 6 : 4, opacity: isSelected ? 0.9 : 0.4 }
+        }).addTo(map);
+
+        routeLayers.push(layer);
+
+        const distKm = (route.distance / 1000).toFixed(2);
+        const mins = Math.round(route.duration / 60);
+
+        let weatherHtml = '<div class="weather-widget">';
+        if (route.ordered_waypoints) {
+          route.ordered_waypoints.forEach((wp, wpIdx) => {
+            const wpName = wpIdx === 0 ? "Start" : (wpIdx === route.ordered_waypoints.length - 1 ? "End" : `Stop ${wpIdx}`);
+            if (wp.weather) {
+              weatherHtml += `<div class="weather-item">
+                <span><b>${wpName}:</b> ${wp.weather.weather_condition}</span>
+                <span>🌡️ ${wp.weather.temperature_celsius}°C | 🌧️ <b>${wp.weather.precipitation_probability_percent}% Rain</b></span>
+              </div>`;
+            }
+          });
+        }
+        weatherHtml += '</div>';
+
+        const card = document.createElement('div');
+        card.className = `route-card ${isSelected ? 'selected' : ''}`;
+        card.onclick = () => selectRoute(idx);
+        card.innerHTML = `
+          <div class="route-card-title">
+            <span class="route-color-indicator" style="background-color: ${route.color}"></span>
+            ${route.title}
+          </div>
+          <div class="route-details">
+            Distance: <strong>${distKm} km</strong> | Duration: <strong>${mins} mins</strong>
+            ${weatherHtml}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (routesData.length > 0 && routesData[0].ordered_waypoints) {
+        routesData[0].ordered_waypoints.forEach((wp, idx) => {
+          const label = idx === 0 ? "Start Point" : (idx === routesData[0].ordered_waypoints.length - 1 ? "Destination" : `Stop ${idx}`);
+          let content = `<b>${label}</b><br>Coords: ${wp.latitude.toFixed(4)}, ${wp.longitude.toFixed(4)}`;
+          if (wp.weather) {
+            content += `<hr style="margin:4px 0;"><div style="font-size:0.85rem;">
+              🌡️ <b>Temp:</b> ${wp.weather.temperature_celsius}°C<br>
+              ☁️ <b>Condition:</b> ${wp.weather.weather_condition}<br>
+              🌧️ <b>Rain Chance:</b> ${wp.weather.precipitation_probability_percent}%<br>
+              💨 <b>Wind:</b> ${wp.weather.wind_speed_kmh} km/h
+            </div>`;
+          }
+          const marker = L.marker([wp.latitude, wp.longitude]).bindPopup(content).addTo(map);
+          mapMarkers.push(marker);
+        });
+      }
+
+      if (routeLayers.length > 0) map.fitBounds(routeLayers[0].getBounds(), { padding: [40, 40] });
+    }
+
+    function selectRoute(selectedIndex) {
+      document.querySelectorAll('.route-card').forEach((card, idx) => {
+        card.classList.toggle('selected', idx === selectedIndex);
+      });
+      routeLayers.forEach((layer, idx) => {
+        if (idx === selectedIndex) {
+          layer.setStyle({ weight: 6, opacity: 0.9 });
+          layer.bringToFront();
+        } else {
+          layer.setStyle({ weight: 4, opacity: 0.3 });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
