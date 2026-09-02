@@ -8,6 +8,7 @@ Postman collections:
 -   **OSRM Route Optimization API** --- health check, authentication,
     route optimization, and admin user management.
 -   **Trip Planner** --- detailed trip planning.
+-   **Disaster / Issue Reporting** --- active disaster lookup, issue reporting, and news scraping.
 
 The Postman collections use `http://localhost:8000` as the default
 `base_url`.
@@ -396,7 +397,118 @@ curl -X GET http://localhost:8000/api/v1/admin/users \
 
 ------------------------------------------------------------------------
 
-# 5. Trip Planner API
+# 5. Disaster / Issue Reporting APIs
+
+## Show Active Disasters
+
+Returns the currently active disasters.
+
+**Method:** `GET`
+
+**Endpoint:**
+
+``` text
+/api/v1/disasters/active
+```
+
+**Authentication:** None
+
+### Example cURL
+
+``` bash
+curl -X GET http://localhost:8000/api/v1/disasters/active
+```
+
+------------------------------------------------------------------------
+
+## Report Issue
+
+Reports a disaster or road issue at a specified geographic location.
+
+**Method:** `POST`
+
+**Endpoint:**
+
+``` text
+/api/v1/disasters/report
+```
+
+**Authentication:** None
+
+**Request body:**
+
+``` json
+{
+  "disaster_type": "Landslide",
+  "description": "Mudslide blocking road near Matigara.",
+  "latitude": 26.7132,
+  "longitude": 88.4323,
+  "radius_km": 1.0,
+  "duration_hours": 12
+}
+```
+
+### Request fields
+
+| Field | Type | Description |
+|---|---|---|
+| `disaster_type` | string | Type of disaster or issue being reported |
+| `description` | string | Description of the reported issue |
+| `latitude` | number | Latitude of the affected location |
+| `longitude` | number | Longitude of the affected location |
+| `radius_km` | number | Radius of the affected area in kilometres |
+| `duration_hours` | number | Expected duration of the reported issue in hours |
+
+### Example cURL
+
+``` bash
+curl -X POST http://localhost:8000/api/v1/disasters/report \
+  -H "Content-Type: application/json" \
+  -d '{
+    "disaster_type": "Landslide",
+    "description": "Mudslide blocking road near Matigara.",
+    "latitude": 26.7132,
+    "longitude": 88.4323,
+    "radius_km": 1.0,
+    "duration_hours": 12
+  }'
+```
+
+------------------------------------------------------------------------
+
+## Scrape News
+
+Triggers disaster/news scraping.
+
+**Method:** `POST`
+
+**Endpoint:**
+
+``` text
+/api/v1/disasters/scrape-news
+```
+
+**Authentication:** Bearer token
+
+**Authorization header:**
+
+``` http
+Authorization: Bearer {{json_web_token_0g6f}}
+```
+
+### Example cURL
+
+``` bash
+curl -X POST http://localhost:8000/api/v1/disasters/scrape-news \
+  -H "Authorization: Bearer YOUR_JSON_WEB_TOKEN"
+```
+
+> The supplied Postman collection uses the collection variable
+> `json_web_token_0g6f` for this request. The variable is marked as secret.
+
+------------------------------------------------------------------------
+
+# 6. Trip Planner API
 
 ## Plan Detailed Trip
 
@@ -559,7 +671,7 @@ curl -X POST http://localhost:8000/api/v1/trip/plan \
 
 ------------------------------------------------------------------------
 
-# 6. Endpoint Summary
+# 7. Endpoint Summary
 
   Category         Method   Endpoint                           Authentication
   ---------------- -------- ---------------------------------- --------------------
@@ -575,7 +687,7 @@ curl -X POST http://localhost:8000/api/v1/trip/plan \
 
 ------------------------------------------------------------------------
 
-# 7. Postman Variables
+# 8. Postman Variables
 
 The supplied collections define the following variables.
 
@@ -587,6 +699,12 @@ The supplied collections define the following variables.
   `access_token`         empty                     User authentication token
   `admin_access_token`   empty                     Administrator authentication token
 
+## Disaster / Issue Reporting
+
+   Variable               Default value             Purpose
+   ---------------------- ------------------------- ------------------------------------
+   `json_web_token_0g6f`  secret                    Bearer token for `/api/v1/disasters/scrape-news`
+
 ## Trip Planner
 
   Variable         Default value             Purpose
@@ -596,7 +714,7 @@ The supplied collections define the following variables.
 
 ------------------------------------------------------------------------
 
-# 8. Authentication Flow
+# 9. Authentication Flow
 
 A typical authenticated request flow based on the supplied Postman
 collections is:
@@ -619,7 +737,7 @@ For administrator operations:
 
 ------------------------------------------------------------------------
 
-# 9. Scope and Limitations
+# 10. Scope and Limitations
 
 This documentation is generated directly from the supplied Postman
 collections. The collections do **not** contain response examples,

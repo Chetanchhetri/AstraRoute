@@ -14,6 +14,10 @@ from app.services.email_service import send_otp_email_sync
 
 router = APIRouter(tags=["Authentication & Routes"])
 
+# ------------------------------------------------------------------
+# Request & Response Schemas
+# ------------------------------------------------------------------
+
 class LocationSchema(BaseModel):
     latitude: float
     longitude: float
@@ -33,12 +37,18 @@ class OptimizeRouteRequest(BaseModel):
     round_trip: Optional[bool] = False
 
 
+# ------------------------------------------------------------------
+# Spatial Helpers: Polyline Intersection & Detour Generator
+# ------------------------------------------------------------------
+
 def is_point_in_box(lat: float, lon: float, box: AvoidBoxSchema) -> bool:
-    buffer = 0.0005
+    """Checks if a point falls inside a blocked box boundary with a safety buffer."""
+    buffer = 0.0005  # ~50m threshold
     return (box.min_lat - buffer <= lat <= box.max_lat + buffer) and \
            (box.min_lon - buffer <= lon <= box.max_lon + buffer)
 
 def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: List[AvoidBoxSchema]) -> bool:
+    """Evaluates if any coordinate along the OSRM geometry hits a blocked region."""
     if not avoid_boxes:
         return False
     for lon, lat in coordinates:
@@ -48,15 +58,12 @@ def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: Lis
     return False
 
 def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSchema, avoid_boxes: List[AvoidBoxSchema]) -> List[dict]:
+    """Generates perimeter waypoints (N, S, E, W) scaled around blocked regions."""
     candidates = []
     for box in avoid_boxes:
         lat_center = (box.min_lat + box.max_lat) / 2.0
         lon_center = (box.min_lon + box.max_lon) / 2.0
-        
-        height = box.max_lat - box.min_lat
-        width = box.max_lon - box.min_lon
 
-        # Progressive offset margins
         for scale in [0.01, 0.02, 0.04, 0.08]:
             potential_pts = [
                 {"latitude": lat_center, "longitude": box.min_lon - scale},  # West
@@ -77,6 +84,11 @@ def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSch
     return sorted(candidates, key=detour_cost)
 
 
+# ------------------------------------------------------------------
+# Authentication Endpoints
+# ------------------------------------------------------------------
+
+@router.post("/api/v1/auth/register")
 @router.post("/api/v1/auth/register/initiate")
 async def initiate_registration(req: RegisterInitiateSchema, background_tasks: BackgroundTasks):
     try:
@@ -176,10 +188,29 @@ async def verify_registration(req: VerifyOTPSchema):
         )
 
 
+# ------------------------------------------------------------------
+# Route Optimization Endpoint (Disaster-Aware)
+# ------------------------------------------------------------------
+
 @router.post("/api/v1/route/optimize")
 @router.post("/api/v1/routes/optimize")
 async def optimize_route(req: OptimizeRouteRequest):
     try:
+        # 1. Fetch active, unexpired climate disaster reports from MongoDB
+        now = datetime.utcnow()
+        cursor = db.disaster_reports.find({"expires_at": {"$gt": now}})
+        disaster_boxes = []
+        async for doc in cursor:
+            disaster_boxes.append(AvoidBoxSchema(
+                min_lat=doc["min_lat"],
+                max_lat=doc["max_lat"],
+                min_lon=doc["min_lon"],
+                max_lon=doc["max_lon"]
+            ))
+
+        # Merge manually drawn user boxes with active climate disaster zones
+        all_avoid_boxes = (req.avoid_boxes or []) + disaster_boxes
+
         async def fetch_osrm_route_with_unlimited_radius(points: List[dict]):
             coord_pairs = [f"{pt['longitude']},{pt['latitude']}" for pt in points]
             coordinates_str = ";".join(coord_pairs)
@@ -207,23 +238,23 @@ async def optimize_route(req: OptimizeRouteRequest):
             base_points.append({"latitude": wp.latitude, "longitude": wp.longitude})
         base_points.append({"latitude": req.end.latitude, "longitude": req.end.longitude})
 
-        # 1. Query Direct Primary Route
+        # 2. Query Direct Primary Route
         routes = await fetch_osrm_route_with_unlimited_radius(base_points)
         valid_routes = []
 
         for route in routes:
             coords = route.get("geometry", {}).get("coordinates", [])
-            if not polyline_intersects_any_box(coords, req.avoid_boxes):
+            if not polyline_intersects_any_box(coords, all_avoid_boxes):
                 valid_routes.append({
-                    "title": "Optimal Clear Route" if not req.avoid_boxes else "Bypass Route",
+                    "title": "Optimal Clear Route" if not all_avoid_boxes else "Bypass Route (Avoiding Active Disasters)",
                     "total_distance_meters": route.get("distance"),
                     "total_duration_seconds": route.get("duration"),
                     "geometry_geojson": route.get("geometry")
                 })
 
-        # 2. Multi-Candidate Segment Bypass Engine
-        if req.avoid_boxes and not valid_routes:
-            detour_candidates = generate_perimeter_bypass_candidates(req.start, req.end, req.avoid_boxes)
+        # 3. Multi-Candidate Segment Bypass Engine
+        if all_avoid_boxes and not valid_routes:
+            detour_candidates = generate_perimeter_bypass_candidates(req.start, req.end, all_avoid_boxes)
 
             for candidate in detour_candidates:
                 detour_points = [base_points[0], candidate, base_points[-1]]
@@ -232,13 +263,13 @@ async def optimize_route(req: OptimizeRouteRequest):
                 for d_route in detour_routes:
                     d_coords = d_route.get("geometry", {}).get("coordinates", [])
                     
-                    # Confirm detour clears all blocked regions
-                    if not polyline_intersects_any_box(d_coords, req.avoid_boxes):
+                    # Confirm detour clears all blocked and disaster regions
+                    if not polyline_intersects_any_box(d_coords, all_avoid_boxes):
                         return {
                             "status": "success",
                             "message": "Route calculated successfully",
                             "routes": [{
-                                "title": "Bypass Route (Avoiding Blocked Region)",
+                                "title": "Bypass Route (Avoiding Active Disasters & Blocked Regions)",
                                 "total_distance_meters": d_route.get("distance"),
                                 "total_duration_seconds": d_route.get("duration"),
                                 "geometry_geojson": d_route.get("geometry")
@@ -249,7 +280,7 @@ async def optimize_route(req: OptimizeRouteRequest):
         if not valid_routes:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No viable bypass route found around the specified blocked regions."
+                detail="No viable bypass route found around active climate disasters or blocked regions."
             )
 
         return {
