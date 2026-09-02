@@ -225,11 +225,11 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Dynamic URL targeting current deployed host domain
-    const API_BASE_URL = "https://astraroute-1.onrender.com/api/v1";
+    const API_BASE_URL = "/api/v1";
     let activeToken = localStorage.getItem("jwt_token") || null;
     let pendingEmail = "";
     let map, mapMarkers = [], routeLayers = [], routesData = [], blockedRectangles = [], blockedBoxes = [];
+    let weatherRouteMarkers = [];
     let isBlockMode = false, blockStartCorner = null;
     const ROUTE_COLORS = ['#2563eb', '#dc2626', '#059669'];
 
@@ -270,6 +270,9 @@
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
+      // Fetch active disaster bounding boxes on load
+      fetchActiveDisasters();
+
       map.on('click', (e) => {
         if (isBlockMode) {
           handleBlockClick(e.latlng);
@@ -283,6 +286,111 @@
         }
         if (!set) addStopInput(coords);
       });
+    }
+
+    async function fetchActiveDisasters() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/disaster/active`);
+        if (!response.ok) return;
+        
+        const hazards = await response.json();
+        
+        hazards.forEach(hazard => {
+          if (hazard.bounding_box) {
+            const box = hazard.bounding_box;
+            const bounds = [
+              [box.min_lat, box.min_lon],
+              [box.max_lat, box.max_lon]
+            ];
+            
+            L.rectangle(bounds, {
+              color: '#d97706',
+              weight: 2,
+              fillColor: '#f59e0b',
+              fillOpacity: 0.35
+            }).bindPopup(`<b>⚠️ Weather Warning</b><br>${hazard.title}<br>${hazard.description}`)
+              .addTo(map);
+
+            blockedBoxes.push(box);
+          }
+        });
+      } catch (err) {
+        console.warn("Could not fetch active weather hazards:", err);
+      }
+    }
+
+    async function fetchAndDisplayRouteWeather(geometryCoordinates) {
+      weatherRouteMarkers.forEach(m => map.removeLayer(m));
+      weatherRouteMarkers = [];
+
+      if (!geometryCoordinates || geometryCoordinates.length === 0) return;
+
+      const totalPoints = geometryCoordinates.length;
+      const sampleIndices = [
+        0,
+        Math.floor(totalPoints * 0.25),
+        Math.floor(totalPoints * 0.50),
+        Math.floor(totalPoints * 0.75),
+        totalPoints - 1
+      ];
+
+      for (let idx of sampleIndices) {
+        const pt = geometryCoordinates[idx]; 
+        const lon = pt[0];
+        const lat = pt[1];
+
+        try {
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,rain,showers,wind_speed_10m,weather_code`;
+          const res = await fetch(url);
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          const current = data.current;
+          const temp = Math.round(current.temperature_2m);
+          const rain = current.rain + current.showers;
+          const wind = Math.round(current.wind_speed_10m);
+
+          const weatherIcon = L.divIcon({
+            className: 'custom-weather-badge',
+            html: `
+              <div style="
+                background: rgba(16, 42, 67, 0.9);
+                color: #ffffff;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 800;
+                white-space: nowrap;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+                border: 1px solid #0f766e;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              ">
+                <span>${rain > 0 ? '🌧️' : '🌤️'}</span>
+                <span>${temp}°C</span>
+              </div>
+            `,
+            iconSize: [60, 24],
+            iconAnchor: [30, 12]
+          });
+
+          const marker = L.marker([lat, lon], { icon: weatherIcon })
+            .bindPopup(`
+              <div style="font-size: 0.85rem; font-family: sans-serif;">
+                <b>Route Waypoint Weather</b><br/>
+                Temp: <b>${temp}°C</b><br/>
+                Precipitation: <b>${rain} mm</b><br/>
+                Wind Speed: <b>${wind} km/h</b>
+              </div>
+            `)
+            .addTo(map);
+
+          weatherRouteMarkers.push(marker);
+        } catch (err) {
+          console.warn("Failed to fetch waypoint weather:", err);
+        }
+      }
     }
 
     function toggleBlockMode() {
@@ -316,6 +424,7 @@
       blockedRectangles.forEach(rect => map.removeLayer(rect));
       blockedRectangles = [];
       blockedBoxes = [];
+      fetchActiveDisasters();
     }
 
     function toggleAuthMode(mode) {
@@ -498,6 +607,11 @@
         mapMarkers.push(startMarker, endMarker);
       }
 
+      // Fetch and display live weather along primary route waypoints
+      if (routesData.length > 0 && routesData[0].geometry) {
+        fetchAndDisplayRouteWeather(routesData[0].geometry.coordinates);
+      }
+
       if (routeLayers.length > 0) map.fitBounds(routeLayers[0].getBounds(), { padding: [40, 40] });
     }
 
@@ -509,6 +623,10 @@
         if (idx === selectedIndex) {
           layer.setStyle({ weight: 6, opacity: 0.9 });
           layer.bringToFront();
+
+          if (routesData[selectedIndex] && routesData[selectedIndex].geometry) {
+            fetchAndDisplayRouteWeather(routesData[selectedIndex].geometry.coordinates);
+          }
         } else {
           layer.setStyle({ weight: 4, opacity: 0.3 });
         }

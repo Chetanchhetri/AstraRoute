@@ -5,14 +5,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
 from app.routes import auth, route, admin, trip, disaster
+from app.services.scheduler import sync_imd_weather_to_db
 
-# Initialize the async task scheduler for background scraping
+# Initialize the async task scheduler for background jobs
 scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
@@ -20,23 +20,39 @@ async def lifespan(app: FastAPI):
     # 1. Establish MongoDB connection on startup
     await connect_to_mongo()
     
-    # 2. Schedule automated Scrapling news scraper to run every 1 hour
+    # 2. Schedule news scraper job (every 1 hour)
     scheduler.add_job(
         disaster.scrape_and_ingest_india_climate_news, 
         'interval', 
         hours=1, 
         id='hourly_climate_scraper'
     )
+
+    # 3. Schedule IMD Weather Sync job (every 1 hour)
+    scheduler.add_job(
+        sync_imd_weather_to_db,
+        'interval',
+        hours=1,
+        id='imd_weather_sync_job',
+        replace_existing=True
+    )
+
+    # Trigger IMD sync once immediately on startup
+    try:
+        await sync_imd_weather_to_db()
+    except Exception as e:
+        print(f"[STARTUP WARN] Initial IMD sync failed: {str(e)}")
+
     scheduler.start()
 
     yield
 
-    # 3. Clean up scheduler and DB connections on shutdown
+    # 4. Clean up scheduler and DB connections on shutdown
     scheduler.shutdown()
     await close_mongo_connection()
-    
+
 app = FastAPI(
-    title="OSRM Route Optimization API",
+    title="AstraRoute API",
     version=settings.VERSION,
     lifespan=lifespan
 )
@@ -57,7 +73,7 @@ app.mount("/app", StaticFiles(directory="app"), name="app")
 async def root():
     return RedirectResponse(url="/app/home.html")
 
-# Register distinct modular routers (duplicates removed)
+# Register distinct modular routers
 app.include_router(auth.router)
 app.include_router(route.router)
 app.include_router(admin.router)
