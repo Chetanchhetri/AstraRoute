@@ -133,7 +133,7 @@
     <button class="btn btn-secondary" onclick="addStopInput()">+ Add Intermediate Stop</button>
     <button id="block-btn" class="btn btn-block" onclick="toggleBlockMode()">🚫 Draw Blocked Region</button>
     <button class="btn btn-secondary" onclick="clearBlockedRegions()">Clear Blocked Regions</button>
-    <button class="btn btn-primary" onclick="calculateRoutes()">Find Routes</button>
+    <button class="btn btn-primary" onclick="calculateRoutes()">Find Routes & Weather</button>
 
     <div id="routes-list"></div>
   </div>
@@ -143,7 +143,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const API_BASE_URL = "http://localhost:8000/api/v1";
+    // Dynamic URL targeting current deployed host domain
+    const API_BASE_URL = `${window.location.origin}/api/v1`;
     let activeToken = localStorage.getItem("jwt_token") || null;
     let pendingEmail = "";
     let map, mapMarkers = [], routeLayers = [], routesData = [], blockedRectangles = [], blockedBoxes = [];
@@ -316,7 +317,10 @@
       try {
         const response = await fetch(`${API_BASE_URL}/route/optimize`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeToken}` },
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${activeToken}` 
+          },
           body: JSON.stringify(payload)
         });
 
