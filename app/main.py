@@ -52,10 +52,10 @@ app.add_middleware(
 # Mount static files for Leaflet map dashboard
 app.mount("/app", StaticFiles(directory="app"), name="app")
 
-# Redirect root path to the index UI
+# Redirect root path to the public home page
 @app.get("/", include_in_schema=False)
 async def root():
-    return RedirectResponse(url="/app/index.html")
+    return RedirectResponse(url="/app/home.html")
 
 # Register distinct modular routers (duplicates removed)
 app.include_router(auth.router)
