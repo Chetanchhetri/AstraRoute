@@ -1,184 +1,979 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="AstraRoute helps you plan clearer, safer journeys with live route alternatives, weather context, and custom trip itineraries." />
-  <title>AstraRoute | Plan the road ahead</title>
-  <style>
-    :root {
-      --ink: #102a43;
-      --muted: #627d98;
-      --line: #d9e2ec;
-      --paper: #ffffff;
-      --canvas: #f4f7f9;
-      --brand: #0f766e;
-      --brand-dark: #115e59;
-      --brand-soft: #e6fffb;
-      --amber: #d97706;
-      --shadow: 0 18px 45px rgba(16, 42, 67, .12);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AstraRoute helps you plan clearer, safer journeys with live route alternatives, weather context, and custom trip itineraries."
+    />
+    <title>AstraRoute | Plan the road ahead</title>
+    <style>
+      :root {
+        --ink: #102a43;
+        --muted: #627d98;
+        --line: #d9e2ec;
+        --paper: #ffffff;
+        --canvas: #f4f7f9;
+        --brand: #0f766e;
+        --brand-dark: #115e59;
+        --brand-soft: #e6fffb;
+        --amber: #d97706;
+        --shadow: 0 18px 45px rgba(16, 42, 67, 0.12);
+      }
 
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; color: var(--ink); background: var(--canvas); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    a { color: inherit; text-decoration: none; }
-    .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
-    .site-header { position: absolute; z-index: 3; top: 0; left: 0; right: 0; border-bottom: 1px solid rgba(255,255,255,.22); color: #fff; }
-    .nav { display: flex; align-items: center; justify-content: space-between; min-height: 76px; }
-    .brand { display: inline-flex; align-items: center; gap: 11px; font-weight: 800; letter-spacing: -.02em; }
-    .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 10px; color: #fff; font-size: 1.15rem; }
-    .nav-links { display: flex; align-items: center; gap: 28px; font-size: .84rem; font-weight: 700; color: rgba(255,255,255,.86); }
-    .nav-links a:hover { color: #fff; }
-    .nav-cta { padding: 10px 15px; border: 1px solid rgba(255,255,255,.5); border-radius: 8px; color: #fff; }
-    .nav-cta:hover { background: rgba(255,255,255,.14); }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--canvas);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .container {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+      .site-header {
+        position: fixed;
+        z-index: 10;
+        top: 0;
+        left: 0;
+        right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+        color: #fff;
+        transition:
+          background-color 0.22s ease,
+          border-color 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+      .site-header.is-scrolled {
+        border-color: var(--line);
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 24px rgba(16, 42, 67, 0.08);
+        backdrop-filter: blur(14px);
+      }
+      .site-header.is-scrolled .brand-mark {
+        border-color: #a7d8d2;
+        color: var(--brand-dark);
+      }
+      .site-header.is-scrolled .nav-links {
+        color: var(--muted);
+      }
+      .site-header.is-scrolled .nav-links a:hover {
+        color: var(--ink);
+      }
+      .site-header.is-scrolled .nav-cta {
+        border-color: #a7d8d2;
+        color: var(--brand-dark);
+      }
+      .site-header.is-scrolled .nav-cta:hover {
+        background: var(--brand-soft);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 76px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1.15rem;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.86);
+      }
+      .nav-links a:hover {
+        color: #fff;
+      }
+      .nav-cta {
+        padding: 10px 15px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        color: #fff;
+      }
+      .nav-cta:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
 
-    .hero { position: relative; display: flex; align-items: center; min-height: 84vh; color: #fff; background: #193b48 url("assets/astraroute-hero.png") center / cover no-repeat; isolation: isolate; }
-    .hero::before { position: absolute; z-index: -1; inset: 0; content: ""; background: rgba(8, 31, 45, .52); }
-    .hero-content { width: min(660px, 100%); padding: 132px 0 100px; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; color: #bff4ea; font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    .eyebrow::before { width: 26px; height: 2px; content: ""; background: #f3c969; }
-    h1 { max-width: 650px; margin: 0; font-size: clamp(3rem, 7vw, 5.9rem); line-height: .98; letter-spacing: -.065em; }
-    .hero-copy { max-width: 520px; margin: 26px 0 0; color: rgba(255,255,255,.83); font-size: 1.08rem; line-height: 1.65; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
-    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 12px 17px; border: 1px solid transparent; border-radius: 9px; font-size: .86rem; font-weight: 800; transition: transform .2s ease, background-color .2s ease, border-color .2s ease; }
-    .button:hover { transform: translateY(-2px); }
-    .button-primary { color: #fff; background: var(--brand); box-shadow: 0 8px 20px rgba(15,118,110,.27); }
-    .button-primary:hover { background: var(--brand-dark); }
-    .button-light { color: #fff; border-color: rgba(255,255,255,.45); background: rgba(255,255,255,.08); }
-    .button-light:hover { background: rgba(255,255,255,.16); }
-    .hero-note { margin-top: 22px; color: rgba(255,255,255,.68); font-size: .78rem; }
+      .hero {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 84vh;
+        color: #fff;
+        background: #193b48 url("assets/astraroute-hero.png") center / cover
+          no-repeat;
+        isolation: isolate;
+      }
+      .hero::before {
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        content: "";
+        background: rgba(8, 31, 45, 0.52);
+      }
+      .hero-content {
+        width: min(660px, 100%);
+        padding: 132px 0 100px;
+      }
+      .hero-layout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 64px;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+        color: #bff4ea;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .eyebrow::before {
+        width: 26px;
+        height: 2px;
+        content: "";
+        background: #f3c969;
+      }
+      h1 {
+        max-width: 650px;
+        margin: 0;
+        font-size: clamp(3rem, 7vw, 5.9rem);
+        line-height: 0.98;
+        letter-spacing: -0.065em;
+      }
+      .hero-copy {
+        max-width: 520px;
+        margin: 26px 0 0;
+        color: rgba(255, 255, 255, 0.83);
+        font-size: 1.08rem;
+        line-height: 1.65;
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 12px 17px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        font-size: 0.86rem;
+        font-weight: 800;
+        transition:
+          transform 0.2s ease,
+          background-color 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .button:hover {
+        transform: translateY(-2px);
+      }
+      .button-primary {
+        color: #fff;
+        background: var(--brand);
+        box-shadow: 0 8px 20px rgba(15, 118, 110, 0.27);
+      }
+      .button-primary:hover {
+        background: var(--brand-dark);
+      }
+      .button-light {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.45);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .button-light:hover {
+        background: rgba(255, 255, 255, 0.16);
+      }
+      .hero-note {
+        margin-top: 22px;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.78rem;
+      }
+      .hero-panel {
+        width: 284px;
+        flex: 0 0 284px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 12px;
+        color: #fff;
+        background: rgba(9, 32, 43, 0.58);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(14px);
+      }
+      .hero-panel-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .hero-panel-label span:last-child {
+        color: #bff4ea;
+      }
+      .hero-route {
+        position: relative;
+        display: grid;
+        gap: 18px;
+        margin: 20px 0 22px;
+        padding-left: 18px;
+      }
+      .hero-route::before {
+        position: absolute;
+        top: 5px;
+        bottom: 5px;
+        left: 4px;
+        width: 1px;
+        content: "";
+        background: rgba(191, 244, 234, 0.58);
+      }
+      .hero-route-stop {
+        position: relative;
+      }
+      .hero-route-stop::before {
+        position: absolute;
+        top: 4px;
+        left: -18px;
+        width: 7px;
+        height: 7px;
+        content: "";
+        border: 2px solid #bff4ea;
+        border-radius: 50%;
+        background: #163d47;
+      }
+      .hero-route-stop:last-child::before {
+        border-color: #f3c969;
+      }
+      .hero-route-stop small {
+        display: block;
+        margin-bottom: 3px;
+        color: rgba(255, 255, 255, 0.56);
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .hero-route-stop strong {
+        display: block;
+        font-size: 0.88rem;
+      }
+      .hero-panel-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.72rem;
+      }
+      .hero-panel-footer strong {
+        color: #fff;
+      }
 
-    .intro { padding: 94px 0 80px; background: var(--paper); }
-    .section-kicker { margin: 0 0 12px; color: var(--brand); font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    h2 { max-width: 630px; margin: 0; font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.05; letter-spacing: -.05em; }
-    .section-copy { max-width: 650px; margin: 18px 0 0; color: var(--muted); font-size: 1rem; line-height: 1.7; }
-    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
-    .feature { padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: #fbfdfe; }
-    .feature-icon { display: grid; width: 38px; height: 38px; place-items: center; margin-bottom: 22px; border-radius: 9px; color: var(--brand-dark); background: var(--brand-soft); font-size: 1.2rem; }
-    .feature h3 { margin: 0; font-size: 1.02rem; letter-spacing: -.02em; }
-    .feature p { margin: 10px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.6; }
+      .intro {
+        padding: 94px 0 80px;
+        background: var(--paper);
+      }
+      .section-kicker {
+        margin: 0 0 12px;
+        color: var(--brand);
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h2 {
+        max-width: 630px;
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        line-height: 1.05;
+        letter-spacing: -0.05em;
+      }
+      .section-copy {
+        max-width: 650px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 48px;
+      }
+      .feature {
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbfdfe;
+      }
+      .feature {
+        position: relative;
+        overflow: hidden;
+        transition:
+          transform 0.22s ease,
+          border-color 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+      .feature::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 42px;
+        height: 3px;
+        content: "";
+        background: var(--brand);
+        opacity: 0;
+        transition: opacity 0.22s ease;
+      }
+      .feature:hover {
+        border-color: #a7d8d2;
+        box-shadow: 0 12px 26px rgba(16, 42, 67, 0.08);
+        transform: translateY(-4px);
+      }
+      .feature:hover::after {
+        opacity: 1;
+      }
+      .feature-icon {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        margin-bottom: 22px;
+        border-radius: 9px;
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+        font-size: 1.2rem;
+      }
+      .feature h3 {
+        margin: 0;
+        font-size: 1.02rem;
+        letter-spacing: -0.02em;
+      }
+      .feature p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.6;
+      }
 
-    .workflow { padding: 92px 0; background: var(--canvas); }
-    .workflow-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 72px; align-items: start; }
-    .workflow-list { display: grid; gap: 0; margin-top: 38px; }
-    .workflow-step { display: grid; grid-template-columns: 38px 1fr; gap: 15px; padding: 0 0 28px; }
-    .workflow-step:last-child { padding-bottom: 0; }
-    .step-number { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid #a7d8d2; border-radius: 50%; color: var(--brand-dark); background: var(--brand-soft); font-size: .78rem; font-weight: 800; }
-    .workflow-step h3 { margin: 3px 0 6px; font-size: .98rem; }
-    .workflow-step p { margin: 0; color: var(--muted); font-size: .87rem; line-height: 1.55; }
-    .journey-panel { padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow); }
-    .journey-top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-    .journey-top strong { font-size: .98rem; }
-    .status { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); font-size: .75rem; font-weight: 800; }
-    .status::before { width: 7px; height: 7px; content: ""; border-radius: 50%; background: #22a06b; }
-    .route-line { position: relative; display: grid; gap: 26px; margin: 26px 0; padding-left: 24px; }
-    .route-line::before { position: absolute; top: 7px; bottom: 7px; left: 6px; width: 2px; content: ""; background: #b8d8d4; }
-    .route-stop { position: relative; }
-    .route-stop::before { position: absolute; top: 4px; left: -24px; width: 12px; height: 12px; content: ""; border: 3px solid var(--brand); border-radius: 50%; background: #fff; }
-    .route-stop:last-child::before { border-color: var(--amber); }
-    .route-stop small { display: block; margin-bottom: 3px; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-    .route-stop strong { font-size: .95rem; }
-    .journey-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-top: 20px; border-top: 1px solid var(--line); }
-    .metric { padding: 12px; border-radius: 8px; background: #f4f8f8; }
-    .metric small { display: block; color: var(--muted); font-size: .7rem; }
-    .metric strong { display: block; margin-top: 5px; font-size: .96rem; }
+      .workflow {
+        padding: 92px 0;
+        background: var(--canvas);
+      }
+      .workflow .section-kicker,
+      .intro .section-kicker {
+        position: relative;
+        padding-left: 38px;
+      }
+      .workflow .section-kicker::before,
+      .intro .section-kicker::before {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 26px;
+        height: 2px;
+        content: "";
+        background: var(--amber);
+        transform: translateY(-50%);
+      }
+      .signal-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 70px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .signal {
+        padding: 20px 24px;
+        border-right: 1px solid var(--line);
+      }
+      .signal:last-child {
+        border-right: 0;
+      }
+      .signal strong {
+        display: block;
+        color: var(--brand-dark);
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+      }
+      .signal span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.76rem;
+      }
+      .workflow-layout {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 72px;
+        align-items: start;
+      }
+      .workflow-list {
+        display: grid;
+        gap: 0;
+        margin-top: 38px;
+      }
+      .workflow-step {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 15px;
+        padding: 0 0 28px;
+      }
+      .workflow-step:last-child {
+        padding-bottom: 0;
+      }
+      .step-number {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid #a7d8d2;
+        border-radius: 50%;
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+      .workflow-step h3 {
+        margin: 3px 0 6px;
+        font-size: 0.98rem;
+      }
+      .workflow-step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.87rem;
+        line-height: 1.55;
+      }
+      .journey-panel {
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+      }
+      .journey-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--line);
+      }
+      .journey-top strong {
+        font-size: 0.98rem;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--brand);
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+      .status::before {
+        width: 7px;
+        height: 7px;
+        content: "";
+        border-radius: 50%;
+        background: #22a06b;
+      }
+      .route-line {
+        position: relative;
+        display: grid;
+        gap: 26px;
+        margin: 26px 0;
+        padding-left: 24px;
+      }
+      .route-line::before {
+        position: absolute;
+        top: 7px;
+        bottom: 7px;
+        left: 6px;
+        width: 2px;
+        content: "";
+        background: #b8d8d4;
+      }
+      .route-stop {
+        position: relative;
+      }
+      .route-stop::before {
+        position: absolute;
+        top: 4px;
+        left: -24px;
+        width: 12px;
+        height: 12px;
+        content: "";
+        border: 3px solid var(--brand);
+        border-radius: 50%;
+        background: #fff;
+      }
+      .route-stop:last-child::before {
+        border-color: var(--amber);
+      }
+      .route-stop small {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .route-stop strong {
+        font-size: 0.95rem;
+      }
+      .journey-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+      }
+      .metric {
+        padding: 12px;
+        border-radius: 8px;
+        background: #f4f8f8;
+      }
+      .metric small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.7rem;
+      }
+      .metric strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.96rem;
+      }
 
-    .cta { padding: 92px 0; color: #fff; background: var(--brand-dark); }
-    .cta-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
-    .cta h2 { max-width: 560px; }
-    .cta p { max-width: 560px; margin: 16px 0 0; color: rgba(255,255,255,.74); line-height: 1.6; }
-    .cta .button-primary { color: var(--brand-dark); background: #fff; box-shadow: none; white-space: nowrap; }
-    .cta .button-primary:hover { background: #d8f5ef; }
-    footer { padding: 25px 0; color: var(--muted); background: #eef3f5; font-size: .78rem; }
-    .footer-inner { display: flex; justify-content: space-between; gap: 20px; }
-    @media (max-width: 760px) {
-      .container { width: min(100% - 28px, 1120px); }
-      .site-header { position: absolute; }
-      .nav { min-height: 68px; }
-      .nav-links a:not(.nav-cta) { display: none; }
-      .hero { min-height: 760px; }
-      .hero-content { padding: 132px 0 84px; }
-      h1 { font-size: clamp(2.9rem, 15vw, 4.4rem); }
-      .hero-copy { font-size: .98rem; }
-      .intro, .workflow, .cta { padding: 68px 0; }
-      .feature-grid, .workflow-layout { grid-template-columns: 1fr; gap: 18px; }
-      .workflow-layout { gap: 44px; }
-      .journey-panel { padding: 22px; }
-      .cta-inner, .footer-inner { align-items: flex-start; flex-direction: column; }
-    }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <div class="container nav">
-      <a class="brand" href="home.html" aria-label="AstraRoute home"><span class="brand-mark">A</span><span>AstraRoute</span></a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="#capabilities">Capabilities</a>
-        <a href="#workflow">How it works</a>
-        <a class="nav-cta" href="index.html">Open planner</a>
-      </nav>
-    </div>
-  </header>
+      .cta {
+        padding: 92px 0;
+        color: #fff;
+        background: var(--brand-dark);
+      }
+      .cta-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 32px;
+      }
+      .cta h2 {
+        max-width: 560px;
+      }
+      .cta p {
+        max-width: 560px;
+        margin: 16px 0 0;
+        color: rgba(255, 255, 255, 0.74);
+        line-height: 1.6;
+      }
+      .cta .button-primary {
+        color: var(--brand-dark);
+        background: #fff;
+        box-shadow: none;
+        white-space: nowrap;
+      }
+      .cta .button-primary:hover {
+        background: #d8f5ef;
+      }
+      .reveal {
+        animation: rise-in 0.7s both;
+      }
+      .reveal-delay {
+        animation-delay: 0.12s;
+      }
+      @keyframes rise-in {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      footer {
+        padding: 25px 0;
+        color: var(--muted);
+        background: #eef3f5;
+        font-size: 0.78rem;
+      }
+      .footer-inner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        text-align: center;
+      }
+      .footer-inner h3 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+      @media (max-width: 760px) {
+        .container {
+          width: min(100% - 28px, 1120px);
+        }
+        .nav {
+          min-height: 68px;
+        }
+        .nav-links a:not(.nav-cta) {
+          display: none;
+        }
+        .hero {
+          min-height: 760px;
+        }
+        .hero-content {
+          padding: 132px 0 84px;
+        }
+        .hero-layout {
+          display: block;
+        }
+        .hero-panel {
+          width: min(100%, 330px);
+          margin-top: 34px;
+        }
+        h1 {
+          font-size: clamp(2.9rem, 15vw, 4.4rem);
+        }
+        .hero-copy {
+          font-size: 0.98rem;
+        }
+        .intro,
+        .workflow,
+        .cta {
+          padding: 68px 0;
+        }
+        .feature-grid,
+        .workflow-layout {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+        .signal-strip {
+          grid-template-columns: 1fr;
+          margin-top: 50px;
+        }
+        .signal {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .signal:last-child {
+          border-bottom: 0;
+        }
+        .workflow-layout {
+          gap: 44px;
+        }
+        .journey-panel {
+          padding: 22px;
+        }
+        .cta-inner,
+        .footer-inner {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+        }
 
-  <main>
-    <section class="hero">
-      <div class="container hero-content">
-        <div class="eyebrow">Route intelligence for real journeys</div>
-        <h1>Plan the road ahead with more clarity.</h1>
-        <p class="hero-copy">AstraRoute brings route alternatives, weather context, blocked-area avoidance, and day-by-day trip planning into one calm workspace.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="index.html">Start planning a route <span aria-hidden="true">&nbsp;→</span></a>
-          <a class="button button-light" href="trip_planner.html">Build a detailed trip</a>
-        </div>
-        <p class="hero-note">Powered by OpenStreetMap routing and designed for journeys that need a little more thought.</p>
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="home.html" aria-label="AstraRoute home"
+          ><span class="brand-mark">A</span><span>AstraRoute</span></a
+        >
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="#capabilities">Capabilities</a>
+          <a href="#workflow">How it works</a>
+          <a class="nav-cta" href="index.html">Open planner</a>
+        </nav>
       </div>
-    </section>
+    </header>
 
-    <section class="intro" id="capabilities">
-      <div class="container">
-        <p class="section-kicker">One workspace, fewer surprises</p>
-        <h2>Everything you need to make a better journey decision.</h2>
-        <p class="section-copy">From a quick point-to-point route to a multi-day itinerary, AstraRoute helps you understand what is ahead before you set off.</p>
-        <div class="feature-grid">
-          <article class="feature"><div class="feature-icon" aria-hidden="true">↗</div><h3>Compare route options</h3><p>See clear route alternatives with distance, duration, and a selected path you can follow on the map.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">◌</div><h3>Plan around disruptions</h3><p>Draw blocked regions on the map and let the planner look for a clear bypass around active hazards.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">⌁</div><h3>Use weather context</h3><p>Review weather information around route waypoints so your plan has useful context, not just a line on a map.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">◫</div><h3>Build custom itineraries</h3><p>Choose travel mode, pace, budget, detour distance, and the services or attractions you want along the way.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">+</div><h3>Discover useful stops</h3><p>Find suggested hotels, restaurants, petrol pumps, EV chargers, heritage sites, and spiritual places.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">✓</div><h3>Keep your plans private</h3><p>Sign in to use protected planning features and keep your saved session separate from the public map view.</p></article>
+    <main>
+      <section class="hero">
+        <div class="container hero-layout">
+          <div class="hero-content reveal">
+            <div class="eyebrow">Route intelligence for real journeys</div>
+            <h1>Plan the road ahead with more clarity.</h1>
+            <p class="hero-copy">
+              AstraRoute brings route alternatives, weather context,
+              blocked-area avoidance, and day-by-day trip planning into one calm
+              workspace.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="index.html"
+                >Start planning a route
+                <span aria-hidden="true">&nbsp;→</span></a
+              >
+              <a class="button button-light" href="trip_planner.html"
+                >Build a detailed trip</a
+              >
+            </div>
+            <p class="hero-note">
+              Powered by OpenStreetMap routing and designed for journeys that
+              need a little more thought.
+            </p>
+          </div>
+          <aside
+            class="hero-panel reveal reveal-delay"
+            aria-label="Route preview"
+          >
+            <div class="hero-panel-label">
+              <span>Journey preview</span><span>Ready</span>
+            </div>
+            <div class="hero-route">
+              <div class="hero-route-stop">
+                <small>Start</small><strong>Siliguri</strong>
+              </div>
+              <div class="hero-route-stop">
+                <small>Plan around</small><strong>Weather and hazards</strong>
+              </div>
+              <div class="hero-route-stop">
+                <small>Destination</small><strong>New Delhi</strong>
+              </div>
+            </div>
+            <div class="hero-panel-footer">
+              <span>Route options</span><strong>Up to 3</strong>
+            </div>
+          </aside>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="workflow" id="workflow">
-      <div class="container workflow-layout">
-        <div>
-          <p class="section-kicker">From idea to itinerary</p>
-          <h2>A focused flow for the way you actually travel.</h2>
-          <div class="workflow-list">
-            <div class="workflow-step"><span class="step-number">1</span><div><h3>Set your start and destination</h3><p>Enter coordinates or click directly on the map to place your journey.</p></div></div>
-            <div class="workflow-step"><span class="step-number">2</span><div><h3>Shape the route</h3><p>Add stops, draw areas to avoid, and choose whether you need a fast route or a fuller trip plan.</p></div></div>
-            <div class="workflow-step"><span class="step-number">3</span><div><h3>Review before you go</h3><p>Compare results on the map, inspect useful stops, and adjust your plan with confidence.</p></div></div>
+      <section class="intro" id="capabilities">
+        <div class="container">
+          <p class="section-kicker">One workspace, fewer surprises</p>
+          <h2>Everything you need to make a better journey decision.</h2>
+          <p class="section-copy">
+            From a quick point-to-point route to a multi-day itinerary,
+            AstraRoute helps you understand what is ahead before you set off.
+          </p>
+          <div class="feature-grid">
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">↗</div>
+              <h3>Compare route options</h3>
+              <p>
+                See clear route alternatives with distance, duration, and a
+                selected path you can follow on the map.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">◌</div>
+              <h3>Plan around disruptions</h3>
+              <p>
+                Draw blocked regions on the map and let the planner look for a
+                clear bypass around active hazards.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">⌁</div>
+              <h3>Use weather context</h3>
+              <p>
+                Review weather information around route waypoints so your plan
+                has useful context, not just a line on a map.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">◫</div>
+              <h3>Build custom itineraries</h3>
+              <p>
+                Choose travel mode, pace, budget, detour distance, and the
+                services or attractions you want along the way.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">+</div>
+              <h3>Discover useful stops</h3>
+              <p>
+                Find suggested hotels, restaurants, petrol pumps, EV chargers,
+                heritage sites, and spiritual places.
+              </p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">✓</div>
+              <h3>Keep your plans private</h3>
+              <p>
+                Sign in to use protected planning features and keep your saved
+                session separate from the public map view.
+              </p>
+            </article>
+          </div>
+          <div class="signal-strip" aria-label="AstraRoute highlights">
+            <div class="signal">
+              <strong>Map-first</strong><span>See decisions in context</span>
+            </div>
+            <div class="signal">
+              <strong>Multi-day</strong
+              ><span>Turn long drives into itineraries</span>
+            </div>
+            <div class="signal">
+              <strong>Hazard-aware</strong
+              ><span>Plan with active disruptions in mind</span>
+            </div>
           </div>
         </div>
-        <div class="journey-panel" aria-label="Route planning preview">
-          <div class="journey-top"><strong>Your next journey</strong><span class="status">Ready to plan</span></div>
-          <div class="route-line">
-            <div class="route-stop"><small>Start</small><strong>Siliguri, West Bengal</strong></div>
-            <div class="route-stop"><small>Along the way</small><strong>Choose your stops and services</strong></div>
-            <div class="route-stop"><small>Destination</small><strong>New Delhi</strong></div>
+      </section>
+
+      <section class="workflow" id="workflow">
+        <div class="container workflow-layout">
+          <div>
+            <p class="section-kicker">From idea to itinerary</p>
+            <h2>A focused flow for the way you actually travel.</h2>
+            <div class="workflow-list">
+              <div class="workflow-step">
+                <span class="step-number">1</span>
+                <div>
+                  <h3>Set your start and destination</h3>
+                  <p>
+                    Enter coordinates or click directly on the map to place your
+                    journey.
+                  </p>
+                </div>
+              </div>
+              <div class="workflow-step">
+                <span class="step-number">2</span>
+                <div>
+                  <h3>Shape the route</h3>
+                  <p>
+                    Add stops, draw areas to avoid, and choose whether you need
+                    a fast route or a fuller trip plan.
+                  </p>
+                </div>
+              </div>
+              <div class="workflow-step">
+                <span class="step-number">3</span>
+                <div>
+                  <h3>Review before you go</h3>
+                  <p>
+                    Compare results on the map, inspect useful stops, and adjust
+                    your plan with confidence.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="journey-metrics"><div class="metric"><small>Route options</small><strong>Up to 3</strong></div><div class="metric"><small>Trip style</small><strong>Your choice</strong></div><div class="metric"><small>Map context</small><strong>Live view</strong></div></div>
+          <div class="journey-panel" aria-label="Route planning preview">
+            <div class="journey-top">
+              <strong>Your next journey</strong
+              ><span class="status">Ready to plan</span>
+            </div>
+            <div class="route-line">
+              <div class="route-stop">
+                <small>Start</small><strong>Siliguri, West Bengal</strong>
+              </div>
+              <div class="route-stop">
+                <small>Along the way</small
+                ><strong>Choose your stops and services</strong>
+              </div>
+              <div class="route-stop">
+                <small>Destination</small><strong>New Delhi</strong>
+              </div>
+            </div>
+            <div class="journey-metrics">
+              <div class="metric">
+                <small>Route options</small><strong>Up to 3</strong>
+              </div>
+              <div class="metric">
+                <small>Trip style</small><strong>Your choice</strong>
+              </div>
+              <div class="metric">
+                <small>Map context</small><strong>Live view</strong>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
+
+      <section class="cta">
+        <div class="container cta-inner">
+          <div>
+            <p class="section-kicker" style="color: #bff4ea">
+              Your route starts here
+            </p>
+            <h2>Turn a destination into a plan.</h2>
+            <p>
+              Open the planner, choose your route, and let AstraRoute help you
+              see the journey more clearly.
+            </p>
+          </div>
+          <a class="button button-primary" href="index.html"
+            >Open the route planner <span aria-hidden="true">&nbsp;→</span></a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container footer-inner">
+        <h3>Made with ❤️ by Team Cyber Sentinels</h3>
       </div>
-    </section>
-
-    <section class="cta">
-      <div class="container cta-inner"><div><p class="section-kicker" style="color:#bff4ea;">Your route starts here</p><h2>Turn a destination into a plan.</h2><p>Open the planner, choose your route, and let AstraRoute help you see the journey more clearly.</p></div><a class="button button-primary" href="index.html">Open the route planner <span aria-hidden="true">&nbsp;→</span></a></div>
-    </section>
-  </main>
-
-  <footer><div class="container footer-inner"><span>AstraRoute</span><span>Route planning for more informed journeys.</span></div></footer>
-</body>
+    </footer>
+    <script>
+      const siteHeader = document.querySelector(".site-header");
+      const updateHeader = () =>
+        siteHeader.classList.toggle("is-scrolled", window.scrollY > 24);
+      updateHeader();
+      window.addEventListener("scroll", updateHeader, { passive: true });
+    </script>
+  </body>
 </html>

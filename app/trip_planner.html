@@ -112,6 +112,28 @@
     .auth-card h2 { color: var(--ink); font-size: 1.35rem; letter-spacing: -.02em; }
     .auth-card p { color: var(--muted) !important; line-height: 1.5; }
     .leaflet-control-zoom a { color: var(--ink) !important; }
+    .nav-header-links { display: flex; align-items: center; gap: 12px; }
+    .nav-header-links a { font-size: .78rem; font-weight: 800; text-decoration: none; }
+    .nav-header-links .home-link { min-height: 34px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--brand-dark); }
+    .nav-header-links .home-link:hover { background: var(--brand-soft); border-color: #a7d8d2; }
+    .loading-overlay { position: fixed; z-index: 10000; inset: 0; display: none; place-items: center; background: rgba(16,42,67,.42); backdrop-filter: blur(3px); }
+    .loading-overlay.visible { display: grid; }
+    .loading-card { display: flex; align-items: center; gap: 12px; min-width: 190px; padding: 15px 18px; border: 1px solid rgba(255,255,255,.8); border-radius: 12px; color: var(--ink); background: #fff; box-shadow: var(--shadow); font-size: .86rem; font-weight: 800; }
+    .loading-spinner { width: 20px; height: 20px; border: 3px solid #cce8e4; border-top-color: var(--brand); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .notice-region { position: fixed; z-index: 10001; top: 18px; right: 18px; display: grid; gap: 10px; width: min(360px, calc(100vw - 36px)); pointer-events: none; }
+    .notice { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; padding: 13px 12px; border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 10px; color: var(--ink); background: #fff; box-shadow: var(--shadow); font-size: .82rem; line-height: 1.4; pointer-events: auto; animation: notice-in .25s ease both; }
+    .notice.warning { border-left-color: #d97706; }
+    .notice.error { border-left-color: #c2413b; }
+    .notice.success { border-left-color: #16845b; }
+    .notice-icon { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; color: #fff; background: var(--brand); font-size: .75rem; font-weight: 900; }
+    .notice.warning .notice-icon { background: #d97706; }
+    .notice.error .notice-icon { background: #c2413b; }
+    .notice.success .notice-icon { background: #16845b; }
+    .notice-close { padding: 0 3px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; }
+    .notice-close:hover { color: var(--ink); }
+    @keyframes notice-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+    @media (max-width: 800px) { .notice-region { top: 12px; right: 12px; width: min(360px, calc(100vw - 24px)); } }
     @media (max-width: 800px) {
       body { display: flex; flex-direction: column; overflow: auto; }
       #sidebar { width: 100%; height: auto; max-height: 68vh; order: 1; border-right: 0; border-bottom: 1px solid var(--line); }
@@ -121,6 +143,10 @@
   </style>
 </head>
 <body>
+  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-busy="true">
+    <div class="loading-card"><span class="loading-spinner" aria-hidden="true"></span><span id="loading-message">Working...</span></div>
+  </div>
+  <div class="notice-region" id="notice-region" aria-live="polite" aria-atomic="true"></div>
 
   <!-- AUTH MODAL -->
   <div id="auth-overlay">
@@ -144,7 +170,10 @@
   <div id="sidebar">
     <div class="nav-header">
       <h2>🗺️ Detailed Trip Planner</h2>
-      <a href="index.html">← Back to Navigation</a>
+      <div class="nav-header-links">
+        <a class="home-link" href="home.html">Home</a>
+        <!-- <a href="index.html">← Navigation</a> -->
+      </div>
     </div>
 
     <!-- Step 1: Route Setup -->
@@ -229,6 +258,32 @@
     let map, routeLayer = null, poiMarkers = [], blockedRectangles = [], blockedBoxes = [];
     let isBlockMode = false, blockStartCorner = null;
 
+    function setLoading(isLoading, message = 'Working...') {
+      document.getElementById('loading-message').textContent = message;
+      document.getElementById('loading-overlay').classList.toggle('visible', isLoading);
+    }
+
+    function showNotice(message, type = 'warning', duration = 4500) {
+      const notice = document.createElement('div');
+      const icon = type === 'success' ? '✓' : type === 'error' ? '!' : 'i';
+      notice.className = `notice ${type}`;
+      const iconNode = document.createElement('span');
+      const messageNode = document.createElement('span');
+      const closeButton = document.createElement('button');
+      iconNode.className = 'notice-icon';
+      iconNode.setAttribute('aria-hidden', 'true');
+      iconNode.textContent = icon;
+      messageNode.textContent = message;
+      closeButton.className = 'notice-close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', 'Dismiss notification');
+      closeButton.textContent = '×';
+      closeButton.addEventListener('click', () => notice.remove());
+      notice.append(iconNode, messageNode, closeButton);
+      document.getElementById('notice-region').appendChild(notice);
+      window.setTimeout(() => notice.remove(), duration);
+    }
+
     window.onload = () => {
       initMap();
       if (activeToken) document.getElementById("auth-overlay").style.display = "none";
@@ -296,6 +351,7 @@
       const email = document.getElementById("login-email").value;
       const password = document.getElementById("login-password").value;
 
+      setLoading(true, 'Signing you in...');
       try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
@@ -308,7 +364,7 @@
         activeToken = data.access_token;
         localStorage.setItem("jwt_token", activeToken);
         document.getElementById("auth-overlay").style.display = "none";
-      } catch (err) { alert(err.message); }
+      } catch (err) { showNotice(err.message, 'error'); } finally { setLoading(false); }
     }
 
     async function generateTripPlan() {
@@ -324,7 +380,7 @@
       const endVal = endInputVal.split(",").map(p => parseFloat(p.trim()));
 
       if (startVal.length !== 2 || endVal.length !== 2 || isNaN(startVal[0]) || isNaN(endVal[0])) {
-        alert("Please click the map or enter valid Start and End coordinates.");
+        showNotice("Please click the map or enter valid Start and End coordinates.", 'warning');
         return;
       }
 
@@ -351,6 +407,7 @@
         avoid_boxes: blockedBoxes
       };
 
+      setLoading(true, 'Building your itinerary...');
       try {
         const response = await fetch(`${API_BASE_URL}/trip/plan`, {
           method: "POST",
@@ -376,7 +433,7 @@
         const data = await response.json();
         renderTripOnMap(data);
 
-      } catch (err) { alert(`Trip Planning Error: ${err.message}`); }
+      } catch (err) { showNotice(`Trip Planning Error: ${err.message}`, 'warning'); } finally { setLoading(false); }
     }
 
     function renderTripOnMap(data) {
