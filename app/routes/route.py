@@ -38,17 +38,17 @@ class OptimizeRouteRequest(BaseModel):
 
 
 # ------------------------------------------------------------------
-# Spatial Helpers: Polyline Intersection & Perimeter Detour Generator
+# Spatial Helpers
 # ------------------------------------------------------------------
 
 def is_point_in_box(lat: float, lon: float, box: AvoidBoxSchema) -> bool:
-    """Checks if a single point lands inside or near a blocked box boundary."""
-    buffer = 0.0005  # Geographic threshold (~50m)
+    """Checks if a point falls inside a blocked box boundary with a safety margin."""
+    buffer = 0.001  # Safety buffer (~100m)
     return (box.min_lat - buffer <= lat <= box.max_lat + buffer) and \
            (box.min_lon - buffer <= lon <= box.max_lon + buffer)
 
 def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: List[AvoidBoxSchema]) -> bool:
-    """Evaluates if any [lon, lat] coordinate in the OSRM geometry hits a blocked region."""
+    """Checks if any point along the polyline touches any blocked box."""
     if not avoid_boxes:
         return False
     for lon, lat in coordinates:
@@ -58,15 +58,19 @@ def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: Lis
     return False
 
 def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSchema, avoid_boxes: List[AvoidBoxSchema]) -> List[dict]:
-    """Generates dynamic perimeter detour waypoints across 4 directions (N, S, E, W) around blocked boxes."""
+    """Generates perimeter waypoints (N, S, E, W) dynamically scaled to the size of the box."""
     candidates = []
     for box in avoid_boxes:
         lat_center = (box.min_lat + box.max_lat) / 2.0
         lon_center = (box.min_lon + box.max_lon) / 2.0
         
-        for offset_factor in [0.015, 0.03, 0.06]:
-            d_lat = ((box.max_lat - box.min_lat) / 2.0) + offset_factor
-            d_lon = ((box.max_lon - box.min_lon) / 2.0) + offset_factor
+        box_height = box.max_lat - box.min_lat
+        box_width = box.max_lon - box.min_lon
+
+        # Scaled offset multipliers (pushes waypoints far enough outside the drawn box)
+        for multiplier in [0.8, 1.5, 2.5]:
+            d_lat = (box_height / 2.0) + (box_height * multiplier)
+            d_lon = (box_width / 2.0) + (box_width * multiplier)
 
             potential_pts = [
                 {"latitude": lat_center, "longitude": box.min_lon - d_lon},  # West
@@ -88,7 +92,7 @@ def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSch
 
 
 # ------------------------------------------------------------------
-# Authentication Routes (/api/v1/auth)
+# Authentication Endpoints
 # ------------------------------------------------------------------
 
 @router.post("/api/v1/auth/register/initiate")
@@ -128,7 +132,7 @@ async def initiate_registration(req: RegisterInitiateSchema, background_tasks: B
 
         return {
             "status": "success",
-            "message": f"Verification OTP sent to {req.email}. Please verify within 10 minutes."
+            "message": f"Verification OTP sent to {req.email}."
         }
     except HTTPException:
         raise
@@ -156,7 +160,7 @@ async def verify_registration(req: VerifyOTPSchema):
             await pending_users_col.delete_one({"email": req.email})
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="OTP code has expired. Please initiate registration again."
+                detail="OTP code has expired."
             )
 
         if pending["otp"] != req.otp.strip():
@@ -179,7 +183,7 @@ async def verify_registration(req: VerifyOTPSchema):
 
         return {
             "status": "success",
-            "message": "Account successfully verified and created! You can now log in."
+            "message": "Account successfully verified!"
         }
     except HTTPException:
         raise
@@ -191,7 +195,7 @@ async def verify_registration(req: VerifyOTPSchema):
 
 
 # ------------------------------------------------------------------
-# Route Optimization Endpoint (/api/v1/route/optimize & /api/v1/routes/optimize)
+# Route Optimization Endpoint
 # ------------------------------------------------------------------
 
 @router.post("/api/v1/route/optimize")
@@ -214,16 +218,16 @@ async def optimize_route(req: OptimizeRouteRequest):
                     return res.json().get("routes", [])
             return []
 
-        # 1. Primary Direct Route Calculation
         base_points = [{"latitude": req.start.latitude, "longitude": req.start.longitude}]
         for wp in req.waypoints:
             base_points.append({"latitude": wp.latitude, "longitude": wp.longitude})
         base_points.append({"latitude": req.end.latitude, "longitude": req.end.longitude})
 
+        # 1. Try direct route first
         routes = await fetch_osrm_routes(base_points)
         valid_routes = []
 
-        for idx, route in enumerate(routes):
+        for route in routes:
             coords = route.get("geometry", {}).get("coordinates", [])
             if not polyline_intersects_any_box(coords, req.avoid_boxes):
                 valid_routes.append({
@@ -233,7 +237,7 @@ async def optimize_route(req: OptimizeRouteRequest):
                     "geometry_geojson": route.get("geometry")
                 })
 
-        # 2. Dynamic Detour Bypass Engine
+        # 2. If obstructed, generate detour candidates
         if req.avoid_boxes and not valid_routes:
             detour_candidates = generate_perimeter_bypass_candidates(req.start, req.end, req.avoid_boxes)
 
@@ -243,17 +247,20 @@ async def optimize_route(req: OptimizeRouteRequest):
 
                 for d_route in detour_routes:
                     d_coords = d_route.get("geometry", {}).get("coordinates", [])
+                    
+                    # Return immediately as soon as ONE valid clear detour path is confirmed
                     if not polyline_intersects_any_box(d_coords, req.avoid_boxes):
-                        valid_routes.append({
-                            "title": "Detour Route (Avoiding Blocked Region)",
-                            "total_distance_meters": d_route.get("distance"),
-                            "total_duration_seconds": d_route.get("duration"),
-                            "geometry_geojson": d_route.get("geometry")
-                        })
-                        break
-                
-                if valid_routes:
-                    break
+                        return {
+                            "status": "success",
+                            "message": "Route calculated successfully",
+                            "routes": [{
+                                "title": "Bypass Route (Avoiding Blocked Region)",
+                                "total_distance_meters": d_route.get("distance"),
+                                "total_duration_seconds": d_route.get("duration"),
+                                "geometry_geojson": d_route.get("geometry")
+                            }],
+                            "osrm_endpoint": settings.OSRM_BASE_URL
+                        }
 
         if not valid_routes:
             raise HTTPException(
