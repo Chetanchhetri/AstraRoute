@@ -59,6 +59,66 @@
     .badge-restaurant { background-color: #ec4899; }
     .poi-desc { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
   </style>
+  <style>
+    :root {
+      --ink: #102a43;
+      --muted: #627d98;
+      --line: #d9e2ec;
+      --canvas: #f4f7f9;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --brand-soft: #e6fffb;
+      --danger: #c2413b;
+      --shadow: 0 14px 35px rgba(16, 42, 67, 0.12);
+    }
+
+    * { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: var(--canvas); color: var(--ink); }
+    #sidebar { width: 448px; padding: 24px 22px; gap: 16px; border-right: 1px solid var(--line); box-shadow: 8px 0 24px rgba(16, 42, 67, 0.06); }
+    #map { background: #dce8e6; }
+    .nav-header { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .nav-header h2 { color: var(--ink); font-size: 1.08rem; letter-spacing: -.01em; }
+    .nav-header a { color: var(--brand); }
+    .section-title { margin-top: 2px; padding: 0 0 8px; border-bottom: 0; color: var(--ink); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; }
+    .form-row { gap: 10px; }
+    .form-group { gap: 6px; }
+    .form-group label { color: var(--ink); font-size: .78rem; font-weight: 700; letter-spacing: .01em; }
+    .form-group input, .form-group select { min-height: 42px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fbfdfe; }
+    .form-group input:focus, .form-group select:focus { outline: 3px solid rgba(15, 118, 110, .14); border-color: var(--brand); background: #fff; }
+    .checkbox-grid { gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fbfdfe; }
+    .checkbox-item { min-height: 34px; padding: 5px 6px; border-radius: 7px; color: var(--ink); }
+    .checkbox-item:hover { background: var(--brand-soft); }
+    .checkbox-item input { accent-color: var(--brand); }
+    .btn { min-height: 42px; padding: 10px 14px; border-radius: 9px; font-size: .86rem; letter-spacing: .01em; }
+    .btn-primary { background: var(--brand); box-shadow: 0 5px 12px rgba(15, 118, 110, .18); }
+    .btn-primary:hover { background: var(--brand-dark); }
+    .btn-secondary { background: #f8fafc; color: var(--ink); border-color: var(--line); }
+    .btn-secondary:hover { background: #edf6f5; border-color: #9fbfba; }
+    .btn-block { background: #fff4f2; color: var(--danger); border: 1px solid #f0c8c3; }
+    .btn-block:hover, .btn-block.active { background: var(--danger); color: #fff; }
+    #trip-summary, #itinerary-list { border-top: 1px solid var(--line); }
+    #trip-summary > div { background: var(--brand-soft) !important; border: 1px solid #a7d8d2 !important; border-radius: 10px !important; }
+    #trip-summary h4 { color: var(--brand-dark) !important; }
+    #trip-summary p { color: var(--brand-dark) !important; line-height: 1.5; }
+    #itinerary-list > h4 { color: var(--ink); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; }
+    .itinerary-day { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 3px 10px rgba(16, 42, 67, .04); }
+    .day-header { color: var(--ink); }
+    .day-header span:last-child { color: var(--brand) !important; }
+    .poi-card { padding: 10px; border: 1px solid #e6edf2; border-radius: 8px; background: #fbfdfe; }
+    .poi-title { color: var(--ink); }
+    .poi-desc { color: var(--muted); line-height: 1.45; }
+    #auth-overlay { background: rgba(16, 42, 67, .68); backdrop-filter: blur(8px); }
+    .auth-card { width: min(390px, calc(100vw - 32px)); padding: 32px; border: 1px solid rgba(255,255,255,.6); border-radius: 16px; box-shadow: var(--shadow); }
+    .auth-card h2 { color: var(--ink); font-size: 1.35rem; letter-spacing: -.02em; }
+    .auth-card p { color: var(--muted) !important; line-height: 1.5; }
+    .leaflet-control-zoom a { color: var(--ink) !important; }
+    @media (max-width: 800px) {
+      body { display: flex; flex-direction: column; overflow: auto; }
+      #sidebar { width: 100%; height: auto; max-height: 68vh; order: 1; border-right: 0; border-bottom: 1px solid var(--line); }
+      #map { flex: none; height: 48vh; min-height: 340px; order: 2; }
+      .form-row { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
 
@@ -164,7 +224,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const API_BASE_URL = "http://localhost:8000/api/v1";
+    const API_BASE_URL = "https://astraroute-1.onrender.com/api/v1";
     let activeToken = localStorage.getItem("jwt_token") || null;
     let map, routeLayer = null, poiMarkers = [], blockedRectangles = [], blockedBoxes = [];
     let isBlockMode = false, blockStartCorner = null;
