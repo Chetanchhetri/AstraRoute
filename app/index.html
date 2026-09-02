@@ -97,6 +97,8 @@
     .form-group label { color: var(--ink); font-size: .78rem; font-weight: 700; letter-spacing: .02em; }
     .form-group input { min-height: 42px; border-color: var(--line); border-radius: 9px; }
     .auth-toggle { color: var(--brand); font-weight: 700; }
+    .auth-home-link { display: block; margin-top: 14px; color: var(--muted); font-size: .78rem; font-weight: 700; text-align: center; text-decoration: none; }
+    .auth-home-link:hover { color: var(--brand-dark); }
     .leaflet-control-zoom a { color: var(--ink) !important; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .home-link { display: inline-flex; align-items: center; min-height: 34px; padding: 12px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--brand-dark); font-size: .78rem; font-weight: 800; text-decoration: none; }
@@ -148,6 +150,7 @@
         <button type="submit" class="btn btn-primary">Sign In</button>
       </form>
       <div class="auth-toggle" onclick="toggleAuthMode('register')">Don't have an account? Register</div>
+      <a class="auth-home-link" href="home.html">← Back to Home</a>
     </div>
 
     <!-- Step 1: Registration Initiate -->
