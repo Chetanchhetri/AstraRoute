@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OSM Route Planner - Multi-Route, Weather & Region Blocking</title>
+  <title>OSM Route Planner - Multi-Route & Region Blocking</title>
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   
@@ -49,14 +49,12 @@
     .route-card-title { font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
     .route-color-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
     .route-details { font-size: 0.85rem; color: #4b5563; margin-top: 4px; }
-    
-    .weather-widget { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 0.8rem; color: #334155; }
-    .weather-item { display: flex; justify-content: space-between; margin-top: 2px; }
   </style>
 </head>
 <body>
 
   <div id="auth-overlay">
+    <!-- Login Card -->
     <div class="auth-card" id="login-card">
       <h2>Login to Route Planner</h2>
       <form onsubmit="handleLogin(event)">
@@ -73,9 +71,10 @@
       <div class="auth-toggle" onclick="toggleAuthMode('register')">Don't have an account? Register</div>
     </div>
 
+    <!-- Step 1: Registration Initiate -->
     <div class="auth-card" id="register-card" style="display: none;">
       <h2>Create Account</h2>
-      <form onsubmit="handleRegister(event)">
+      <form onsubmit="handleRegisterInitiate(event)">
         <div class="form-group">
           <label>Full Name</label>
           <input type="text" id="reg-name" required placeholder="Chetan Chhetri" />
@@ -92,9 +91,24 @@
           <label>Password</label>
           <input type="password" id="reg-password" required minlength="8" placeholder="••••••••" />
         </div>
-        <button type="submit" class="btn btn-primary">Register Account</button>
+        <button type="submit" class="btn btn-primary">Send Verification Code</button>
       </form>
       <div class="auth-toggle" onclick="toggleAuthMode('login')">Already registered? Sign In</div>
+    </div>
+
+    <!-- Step 2: OTP Verification -->
+    <div class="auth-card" id="otp-card" style="display: none;">
+      <h2>Verify OTP</h2>
+      <p style="font-size: 0.8rem; color: #6b7280; text-align: center; margin-bottom: 12px;">
+        A 6-digit code was sent to your email.
+      </p>
+      <form onsubmit="handleVerifyOTP(event)">
+        <div class="form-group">
+          <label>6-Digit OTP</label>
+          <input type="text" id="otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" />
+        </div>
+        <button type="submit" class="btn btn-primary">Verify & Finish Registration</button>
+      </form>
     </div>
   </div>
 
@@ -109,17 +123,17 @@
 
     <div id="stops-container">
       <div class="stop-group">
-        <input type="text" class="stop-coords" placeholder="Start (e.g., 26.685190, 88.325272)" />
+        <input type="text" class="stop-coords" placeholder="Start (e.g., 26.684812, 88.324585)" />
       </div>
       <div class="stop-group">
-        <input type="text" class="stop-coords" placeholder="Destination (e.g., 26.769476, 88.376534)" />
+        <input type="text" class="stop-coords" placeholder="Destination (e.g., 25.760597, 88.383636)" />
       </div>
     </div>
 
     <button class="btn btn-secondary" onclick="addStopInput()">+ Add Intermediate Stop</button>
     <button id="block-btn" class="btn btn-block" onclick="toggleBlockMode()">🚫 Draw Blocked Region</button>
     <button class="btn btn-secondary" onclick="clearBlockedRegions()">Clear Blocked Regions</button>
-    <button class="btn btn-primary" onclick="calculateRoutes()">Find Routes & Weather</button>
+    <button class="btn btn-primary" onclick="calculateRoutes()">Find Routes</button>
 
     <div id="routes-list"></div>
   </div>
@@ -131,6 +145,7 @@
   <script>
     const API_BASE_URL = "http://localhost:8000/api/v1";
     let activeToken = localStorage.getItem("jwt_token") || null;
+    let pendingEmail = "";
     let map, mapMarkers = [], routeLayers = [], routesData = [], blockedRectangles = [], blockedBoxes = [];
     let isBlockMode = false, blockStartCorner = null;
     const ROUTE_COLORS = ['#2563eb', '#dc2626', '#059669'];
@@ -151,7 +166,6 @@
           handleBlockClick(e.latlng);
           return;
         }
-
         const coords = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
         const inputs = document.querySelectorAll('.stop-coords');
         let set = false;
@@ -198,6 +212,7 @@
     function toggleAuthMode(mode) {
       document.getElementById('login-card').style.display = mode === 'login' ? 'block' : 'none';
       document.getElementById('register-card').style.display = mode === 'register' ? 'block' : 'none';
+      document.getElementById('otp-card').style.display = mode === 'otp' ? 'block' : 'none';
     }
 
     async function handleLogin(e) {
@@ -220,25 +235,41 @@
       } catch (err) { alert(err.message); }
     }
 
-    async function handleRegister(e) {
+    async function handleRegisterInitiate(e) {
       e.preventDefault();
+      pendingEmail = document.getElementById("reg-email").value;
       const name = document.getElementById("reg-name").value;
       const mobile_number = document.getElementById("reg-mobile").value;
-      const email = document.getElementById("reg-email").value;
       const password = document.getElementById("reg-password").value;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/auth/register/initiate`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, mobile_number, email, password, is_admin: false })
+          body: JSON.stringify({ name, mobile_number, email: pendingEmail, password, is_admin: false })
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Registration failed');
+        if (!response.ok) throw new Error(data.detail || 'Registration initiation failed');
 
-        alert("Registration successful! Logging in...");
-        document.getElementById("login-email").value = email;
-        document.getElementById("login-password").value = password;
-        handleLogin(e);
+        alert(data.message);
+        toggleAuthMode('otp');
+      } catch (err) { alert(err.message); }
+    }
+
+    async function handleVerifyOTP(e) {
+      e.preventDefault();
+      const otp = document.getElementById("otp-code").value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register/verify`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingEmail, otp })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'OTP verification failed');
+
+        alert(data.message);
+        toggleAuthMode('login');
+        document.getElementById("login-email").value = pendingEmail;
       } catch (err) { alert(err.message); }
     }
 
@@ -277,36 +308,38 @@
       const payload = {
         start: { latitude: coordinates[0][0], longitude: coordinates[0][1] },
         end: { latitude: coordinates[coordinates.length - 1][0], longitude: coordinates[coordinates.length - 1][1] },
-        stops: coordinates.slice(1, -1).map(c => ({ latitude: c[0], longitude: c[1] })),
+        waypoints: coordinates.slice(1, -1).map(c => ({ latitude: c[0], longitude: c[1] })),
         avoid_boxes: blockedBoxes,
         round_trip: false
       };
 
       try {
-        const response = await fetch(`${API_BASE_URL}/routes/optimize`, {
+        const response = await fetch(`${API_BASE_URL}/route/optimize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeToken}` },
           body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.detail || "FastAPI Backend failed");
-        }
-        
         const data = await response.json();
 
-        routesData = data.routes.map((route, idx) => ({
-          title: route.title,
-          distance: route.total_distance_meters,
-          duration: route.total_duration_seconds,
-          geometry: route.geometry_geojson,
-          ordered_waypoints: route.ordered_waypoints,
-          color: ROUTE_COLORS[idx] || '#6b7280'
-        }));
+        if (!response.ok) {
+          throw new Error(data.detail || "FastAPI Backend failed");
+        }
 
-        renderMultiRoutes(coordinates);
-      } catch (err) { alert(`Routing Error: ${err.message}`); }
+        if (data.routes && data.routes.length > 0) {
+          routesData = data.routes.map((route, idx) => ({
+            title: route.title,
+            distance: route.total_distance_meters,
+            duration: route.total_duration_seconds,
+            geometry: route.geometry_geojson,
+            color: ROUTE_COLORS[idx] || '#6b7280'
+          }));
+
+          renderMultiRoutes(coordinates);
+        }
+      } catch (err) { 
+        alert(`Routing Warning: ${err.message}`); 
+      }
     }
 
     function renderMultiRoutes(userCoordinates) {
@@ -315,7 +348,7 @@
       routeLayers = []; mapMarkers = [];
 
       const container = document.getElementById('routes-list');
-      container.innerHTML = '<h4>Available Alternatives:</h4>';
+      container.innerHTML = '<h4>Available Routes:</h4>';
 
       routesData.forEach((route, idx) => {
         const isSelected = idx === 0;
@@ -328,20 +361,6 @@
         const distKm = (route.distance / 1000).toFixed(2);
         const mins = Math.round(route.duration / 60);
 
-        let weatherHtml = '<div class="weather-widget">';
-        if (route.ordered_waypoints) {
-          route.ordered_waypoints.forEach((wp, wpIdx) => {
-            const wpName = wpIdx === 0 ? "Start" : (wpIdx === route.ordered_waypoints.length - 1 ? "End" : `Stop ${wpIdx}`);
-            if (wp.weather) {
-              weatherHtml += `<div class="weather-item">
-                <span><b>${wpName}:</b> ${wp.weather.weather_condition}</span>
-                <span>🌡️ ${wp.weather.temperature_celsius}°C | 🌧️ <b>${wp.weather.precipitation_probability_percent}% Rain</b></span>
-              </div>`;
-            }
-          });
-        }
-        weatherHtml += '</div>';
-
         const card = document.createElement('div');
         card.className = `route-card ${isSelected ? 'selected' : ''}`;
         card.onclick = () => selectRoute(idx);
@@ -352,27 +371,15 @@
           </div>
           <div class="route-details">
             Distance: <strong>${distKm} km</strong> | Duration: <strong>${mins} mins</strong>
-            ${weatherHtml}
           </div>
         `;
         container.appendChild(card);
       });
 
-      if (routesData.length > 0 && routesData[0].ordered_waypoints) {
-        routesData[0].ordered_waypoints.forEach((wp, idx) => {
-          const label = idx === 0 ? "Start Point" : (idx === routesData[0].ordered_waypoints.length - 1 ? "Destination" : `Stop ${idx}`);
-          let content = `<b>${label}</b><br>Coords: ${wp.latitude.toFixed(4)}, ${wp.longitude.toFixed(4)}`;
-          if (wp.weather) {
-            content += `<hr style="margin:4px 0;"><div style="font-size:0.85rem;">
-              🌡️ <b>Temp:</b> ${wp.weather.temperature_celsius}°C<br>
-              ☁️ <b>Condition:</b> ${wp.weather.weather_condition}<br>
-              🌧️ <b>Rain Chance:</b> ${wp.weather.precipitation_probability_percent}%<br>
-              💨 <b>Wind:</b> ${wp.weather.wind_speed_kmh} km/h
-            </div>`;
-          }
-          const marker = L.marker([wp.latitude, wp.longitude]).bindPopup(content).addTo(map);
-          mapMarkers.push(marker);
-        });
+      if (userCoordinates.length >= 2) {
+        const startMarker = L.marker([userCoordinates[0][0], userCoordinates[0][1]]).bindPopup("<b>Start Point</b>").addTo(map);
+        const endMarker = L.marker([userCoordinates[userCoordinates.length - 1][0], userCoordinates[userCoordinates.length - 1][1]]).bindPopup("<b>Destination</b>").addTo(map);
+        mapMarkers.push(startMarker, endMarker);
       }
 
       if (routeLayers.length > 0) map.fitBounds(routeLayers[0].getBounds(), { padding: [40, 40] });

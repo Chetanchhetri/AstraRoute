@@ -1,22 +1,28 @@
-import os
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "OSM Route Optimization API"
+    PROJECT_NAME: str = "OSRM Route Optimization API"
     VERSION: str = "1.0.0"
-    DEBUG: bool = False
     
-    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "route_planner_db")
+    # Database Configuration
+    MONGO_URI: str
+    MONGO_DB_NAME: str
     
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "default_secret_key_change_in_prod")
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
-    PEPPER_KEY: str = os.getenv("PEPPER_KEY", "default_pepper_key")
+    # Security
+    JWT_SECRET_KEY: str = "production_ultra_secure_jwt_secret_key_12345"
     
-    OSRM_BASE_URL: str = os.getenv("OSRM_BASE_URL", "http://router.project-osrm.org")
+    # SMTP Email Credentials
+    EMAIL_SENDER: str = ""
+    EMAIL_PASSWORD: str = ""
 
-    class Config:
-        env_file = ".env"
+    # OSRM Service URL (ADDED)
+    OSRM_BASE_URL: str = "http://router.project-osrm.org"
+
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()
