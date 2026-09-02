@@ -14,10 +14,6 @@ from app.services.email_service import send_otp_email_sync
 
 router = APIRouter(tags=["Authentication & Routes"])
 
-# ------------------------------------------------------------------
-# Request & Response Schemas
-# ------------------------------------------------------------------
-
 class LocationSchema(BaseModel):
     latitude: float
     longitude: float
@@ -37,18 +33,12 @@ class OptimizeRouteRequest(BaseModel):
     round_trip: Optional[bool] = False
 
 
-# ------------------------------------------------------------------
-# Spatial Helpers
-# ------------------------------------------------------------------
-
 def is_point_in_box(lat: float, lon: float, box: AvoidBoxSchema) -> bool:
-    """Checks if a point falls inside a blocked box boundary with a safety margin."""
-    buffer = 0.001  # Safety buffer (~100m)
+    buffer = 0.0005
     return (box.min_lat - buffer <= lat <= box.max_lat + buffer) and \
            (box.min_lon - buffer <= lon <= box.max_lon + buffer)
 
 def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: List[AvoidBoxSchema]) -> bool:
-    """Checks if any point along the polyline touches any blocked box."""
     if not avoid_boxes:
         return False
     for lon, lat in coordinates:
@@ -58,25 +48,21 @@ def polyline_intersects_any_box(coordinates: List[List[float]], avoid_boxes: Lis
     return False
 
 def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSchema, avoid_boxes: List[AvoidBoxSchema]) -> List[dict]:
-    """Generates perimeter waypoints (N, S, E, W) dynamically scaled to the size of the box."""
     candidates = []
     for box in avoid_boxes:
         lat_center = (box.min_lat + box.max_lat) / 2.0
         lon_center = (box.min_lon + box.max_lon) / 2.0
         
-        box_height = box.max_lat - box.min_lat
-        box_width = box.max_lon - box.min_lon
+        height = box.max_lat - box.min_lat
+        width = box.max_lon - box.min_lon
 
-        # Scaled offset multipliers (pushes waypoints far enough outside the drawn box)
-        for multiplier in [0.8, 1.5, 2.5]:
-            d_lat = (box_height / 2.0) + (box_height * multiplier)
-            d_lon = (box_width / 2.0) + (box_width * multiplier)
-
+        # Progressive offset margins
+        for scale in [0.01, 0.02, 0.04, 0.08]:
             potential_pts = [
-                {"latitude": lat_center, "longitude": box.min_lon - d_lon},  # West
-                {"latitude": lat_center, "longitude": box.max_lon + d_lon},  # East
-                {"latitude": box.max_lat + d_lat, "longitude": lon_center},  # North
-                {"latitude": box.min_lat - d_lat, "longitude": lon_center},  # South
+                {"latitude": lat_center, "longitude": box.min_lon - scale},  # West
+                {"latitude": lat_center, "longitude": box.max_lon + scale},  # East
+                {"latitude": box.max_lat + scale, "longitude": lon_center},  # North
+                {"latitude": box.min_lat - scale, "longitude": lon_center},  # South
             ]
             
             for pt in potential_pts:
@@ -90,10 +76,6 @@ def generate_perimeter_bypass_candidates(start: LocationSchema, end: LocationSch
 
     return sorted(candidates, key=detour_cost)
 
-
-# ------------------------------------------------------------------
-# Authentication Endpoints
-# ------------------------------------------------------------------
 
 @router.post("/api/v1/auth/register/initiate")
 async def initiate_registration(req: RegisterInitiateSchema, background_tasks: BackgroundTasks):
@@ -194,28 +176,30 @@ async def verify_registration(req: VerifyOTPSchema):
         )
 
 
-# ------------------------------------------------------------------
-# Route Optimization Endpoint
-# ------------------------------------------------------------------
-
 @router.post("/api/v1/route/optimize")
 @router.post("/api/v1/routes/optimize")
 async def optimize_route(req: OptimizeRouteRequest):
     try:
-        async def fetch_osrm_routes(points: List[dict]):
+        async def fetch_osrm_route_with_unlimited_radius(points: List[dict]):
             coord_pairs = [f"{pt['longitude']},{pt['latitude']}" for pt in points]
             coordinates_str = ";".join(coord_pairs)
             osrm_url = f"{settings.OSRM_BASE_URL}/route/v1/driving/{coordinates_str}"
+            
+            # Unlimited radius snapping allows points near tea gardens/rural areas to map correctly
+            radiuses = ";".join(["unlimited" for _ in points])
             params = {
                 "overview": "full",
                 "geometries": "geojson",
-                "alternatives": "true"
+                "alternatives": "false",
+                "radiuses": radiuses
             }
             
             async with httpx.AsyncClient() as client:
                 res = await client.get(osrm_url, params=params, timeout=10.0)
                 if res.status_code == 200:
-                    return res.json().get("routes", [])
+                    data = res.json()
+                    if data.get("code") == "Ok" and data.get("routes"):
+                        return data.get("routes", [])
             return []
 
         base_points = [{"latitude": req.start.latitude, "longitude": req.start.longitude}]
@@ -223,8 +207,8 @@ async def optimize_route(req: OptimizeRouteRequest):
             base_points.append({"latitude": wp.latitude, "longitude": wp.longitude})
         base_points.append({"latitude": req.end.latitude, "longitude": req.end.longitude})
 
-        # 1. Try direct route first
-        routes = await fetch_osrm_routes(base_points)
+        # 1. Query Direct Primary Route
+        routes = await fetch_osrm_route_with_unlimited_radius(base_points)
         valid_routes = []
 
         for route in routes:
@@ -237,18 +221,18 @@ async def optimize_route(req: OptimizeRouteRequest):
                     "geometry_geojson": route.get("geometry")
                 })
 
-        # 2. If obstructed, generate detour candidates
+        # 2. Multi-Candidate Segment Bypass Engine
         if req.avoid_boxes and not valid_routes:
             detour_candidates = generate_perimeter_bypass_candidates(req.start, req.end, req.avoid_boxes)
 
             for candidate in detour_candidates:
                 detour_points = [base_points[0], candidate, base_points[-1]]
-                detour_routes = await fetch_osrm_routes(detour_points)
+                detour_routes = await fetch_osrm_route_with_unlimited_radius(detour_points)
 
                 for d_route in detour_routes:
                     d_coords = d_route.get("geometry", {}).get("coordinates", [])
                     
-                    # Return immediately as soon as ONE valid clear detour path is confirmed
+                    # Confirm detour clears all blocked regions
                     if not polyline_intersects_any_box(d_coords, req.avoid_boxes):
                         return {
                             "status": "success",
