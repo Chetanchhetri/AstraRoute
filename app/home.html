@@ -318,9 +318,45 @@
       }
 
       .intro {
-        padding: 94px 0 80px;
-        background: var(--paper);
+        position: relative;
+        overflow: hidden;
+        padding: 108px 0 86px;
+        background: #f8fbfb;
       }
+      .intro::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 34%;
+        height: 100%;
+        content: "";
+        /* border-left: 1px solid rgba(167, 216, 210, 0.32); */
+        background: rgba(230, 255, 251, 0.22);
+        pointer-events: none;
+      }
+      .intro-head {
+        position: relative;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 36px;
+      }
+      .intro-head-copy { max-width: 690px; }
+      .intro-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0 4px 18px;
+        border-left: 2px solid var(--amber);
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.4;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .intro-meta strong { color: var(--brand-dark); font-size: 2.1rem; line-height: 1; letter-spacing: -0.06em; }
+      .intro-meta span { white-space: nowrap; }
+
       .section-kicker {
         margin: 0 0 12px;
         color: var(--brand);
@@ -345,7 +381,7 @@
       }
       .feature-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(12, 1fr);
         gap: 16px;
         margin-top: 48px;
       }
@@ -382,6 +418,34 @@
       .feature:hover::after {
         opacity: 1;
       }
+      .feature--hero {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 292px;
+        color: var(--ink);
+        background: #e7f6f2;
+        box-shadow: 0 14px 28px rgba(15, 118, 110, 0.1);
+      }
+      .feature--hero .feature-icon { color: var(--brand-dark); background: #bff4ea; }
+      .feature--hero h3 { max-width: 420px; font-size: 1.28rem; letter-spacing: -0.04em; }
+      .feature--hero p { max-width: 470px; color: var(--muted); }
+      .feature-visual { position: relative; height: 74px; margin-top: 20px; overflow: hidden; border-top: 1px solid rgba(24, 148, 138, 0.18); border-bottom: 1px solid rgba(15, 118, 110, 0.18); }
+      .feature-visual::before { position: absolute; top: 48px; left: -10px; width: 115%; height: 2px; content: ""; background: #d97706; transform: rotate(-12deg); transform-origin: left; }
+      .feature-visual::after { position: absolute; top: 20px; left: 31%; width: 42%; height: 34px; content: ""; border-top: 1px dashed rgba(15, 118, 110, 0.56); border-radius: 50%; transform: rotate(12deg); }
+      .feature-visual span { position: absolute; bottom: 11px; width: 9px; height: 9px; border: 2px solid var(--brand); border-radius: 50%; background: #e7f6f2; }
+      .feature-visual span:nth-child(1) { left: 12%; }
+      .feature-visual span:nth-child(2) { left: 47%; bottom: 42px; }
+      .feature-visual span:nth-child(3) { right: 10%; border-color: #f3c969; }
+      .feature-grid .feature:not(.feature--hero) { min-height: 158px; }
+      .feature-grid .feature:nth-child(1), .feature-grid .feature:nth-child(2) { grid-column: span 6; min-height: 292px; }
+      .feature-grid .feature:nth-child(2) { background: #effaf7; }
+      .feature-grid .feature:nth-child(3), .feature-grid .feature:nth-child(6) { background: #fffaf0; }
+      .feature-grid .feature:nth-child(4), .feature-grid .feature:nth-child(5) { background: #eef9f7; }
+      .feature-grid .feature:nth-child(3), .feature-grid .feature:nth-child(4), .feature-grid .feature:nth-child(5), .feature-grid .feature:nth-child(6) { grid-column: span 3; }
+      .feature-grid .feature:not(.feature--hero) .feature-icon { margin-bottom: 18px; }
+      .feature-grid .feature:not(.feature--hero) h3 { font-size: 0.98rem; }
+      .feature-grid .feature:not(.feature--hero) p { font-size: 0.82rem; }
       .feature-icon {
         display: grid;
         width: 38px;
@@ -703,10 +767,23 @@
         .cta {
           padding: 68px 0;
         }
+        .intro-head {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 24px;
+        }
+        .intro-meta {
+          padding-left: 12px;
+        }
         .feature-grid,
         .workflow-layout {
           grid-template-columns: 1fr;
           gap: 18px;
+        }
+        .feature-grid .feature:nth-child(n) {
+          grid-column: auto;
+          grid-row: auto;
+          min-height: 0;
         }
         .signal-strip {
           grid-template-columns: 1fr;
@@ -802,28 +879,47 @@
 
       <section class="intro" id="capabilities">
         <div class="container">
-          <p class="section-kicker">One workspace, fewer surprises</p>
-          <h2>Everything you need to make a better journey decision.</h2>
-          <p class="section-copy">
-            From a quick point-to-point route to a multi-day itinerary,
-            AstraRoute helps you understand what is ahead before you set off.
-          </p>
+          <div class="intro-head">
+            <div class="intro-head-copy">
+              <p class="section-kicker">One workspace, fewer surprises</p>
+              <h2>Everything you need to make a better journey decision.</h2>
+              <p class="section-copy">
+                From a quick point-to-point route to a multi-day itinerary,
+                AstraRoute helps you understand what is ahead before you set
+                off.
+              </p>
+            </div>
+            <div class="intro-meta">
+              <strong>06</strong
+              ><span>ways to travel<br />with more clarity</span>
+            </div>
+          </div>
           <div class="feature-grid">
-            <article class="feature">
+            <article class="feature feature--hero">
               <div class="feature-icon" aria-hidden="true">↗</div>
-              <h3>Compare route options</h3>
-              <p>
-                See clear route alternatives with distance, duration, and a
-                selected path you can follow on the map.
-              </p>
+              <div>
+                <h3>Compare route options with the whole journey in view.</h3>
+                <p>
+                  See clear route alternatives with distance, duration, and a
+                  selected path you can follow on the map.
+                </p>
+              </div>
+              <div class="feature-visual" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
             </article>
-            <article class="feature">
+            <article class="feature feature--hero">
               <div class="feature-icon" aria-hidden="true">◌</div>
-              <h3>Plan around disruptions</h3>
-              <p>
-                Draw blocked regions on the map and let the planner look for a
-                clear bypass around active hazards.
-              </p>
+              <div>
+                <h3>Plan around disruptions</h3>
+                <p>
+                  Draw blocked regions on the map and let the planner look for a
+                  clear bypass around active hazards.
+                </p>
+              </div>
+              <div class="feature-visual" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
             </article>
             <article class="feature">
               <div class="feature-icon" aria-hidden="true">⌁</div>
