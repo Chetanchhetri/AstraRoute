@@ -34,6 +34,11 @@
     .stop-group { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
     .stop-group input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
 
+    .search-box { display: flex; gap: 6px; margin-bottom: 6px; }
+    .search-box input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 9px; font-size: 0.85rem; }
+    .btn-search { min-height: 40px; padding: 0 12px; background: #0f766e; color: #fff; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; }
+    .btn-search:hover { background: #115e59; }
+
     .btn { padding: 10px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background-color 0.2s; }
     .btn-primary { background-color: #2563eb; color: #ffffff; width: 100%; }
     .btn-primary:hover { background-color: #1d4ed8; }
@@ -203,6 +208,12 @@
       <div class="header-actions"><a class="home-link" href="home.html">Home</a><button class="btn btn-secondary" onclick="logout()" style="padding: 6px 10px; font-size: 0.8rem;">Logout</button></div>
     </div>
 
+    <!-- Search Place Name Bar -->
+    <div class="search-box">
+      <input type="text" id="place-search-input" placeholder="Search location name (e.g. Siliguri)" />
+      <button class="btn-search" onclick="searchPlaceByName()">Search</button>
+    </div>
+
     <div id="stops-container">
       <div class="stop-group">
         <input type="text" class="stop-coords" placeholder="Start (e.g., 26.684812, 88.324585)" />
@@ -231,6 +242,7 @@
     let map, mapMarkers = [], routeLayers = [], routesData = [], blockedRectangles = [], blockedBoxes = [];
     let weatherRouteMarkers = [];
     let isBlockMode = false, blockStartCorner = null;
+    let placeSearchMarker = null;
     const ROUTE_COLORS = ['#2563eb', '#dc2626', '#059669'];
 
     function setLoading(isLoading, message = 'Working...') {
@@ -270,7 +282,6 @@
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Fetch active disaster bounding boxes on load
       fetchActiveDisasters();
 
       map.on('click', (e) => {
@@ -286,6 +297,57 @@
         }
         if (!set) addStopInput(coords);
       });
+    }
+
+    async function searchPlaceByName() {
+      const query = document.getElementById("place-search-input").value.trim();
+      if (!query) {
+        showNotice("Please enter a location name to search.", "warning");
+        return;
+      }
+
+      setLoading(true, "Searching location...");
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const res = await fetch(url);
+        const results = await res.json();
+
+        if (results && results.length > 0) {
+          const { lat, lon, display_name } = results[0];
+          const latitude = parseFloat(lat);
+          const longitude = parseFloat(lon);
+          const coordStr = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+          map.flyTo([latitude, longitude], 14);
+
+          if (placeSearchMarker) map.removeLayer(placeSearchMarker);
+          placeSearchMarker = L.marker([latitude, longitude])
+            .addTo(map)
+            .bindPopup(`<b>${display_name}</b>`)
+            .openPopup();
+
+          const inputs = document.querySelectorAll('.stop-coords');
+          let assigned = false;
+          for (let input of inputs) {
+            if (!input.value.trim()) {
+              input.value = coordStr;
+              assigned = true;
+              break;
+            }
+          }
+          if (!assigned) {
+            addStopInput(coordStr);
+          }
+
+          showNotice(`Found: ${display_name.split(',')[0]}`, 'success', 3000);
+        } else {
+          showNotice("Location not found. Try a more specific name.", "warning");
+        }
+      } catch (err) {
+        showNotice("Geocoding service unavailable.", "error");
+      } finally {
+        setLoading(false);
+      }
     }
 
     async function fetchActiveDisasters() {
@@ -607,7 +669,6 @@
         mapMarkers.push(startMarker, endMarker);
       }
 
-      // Fetch and display live weather along primary route waypoints
       if (routesData.length > 0 && routesData[0].geometry) {
         fetchAndDisplayRouteWeather(routesData[0].geometry.coordinates);
       }

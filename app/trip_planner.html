@@ -32,6 +32,11 @@
 
     .section-title { font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-top: 4px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
 
+    .search-box { display: flex; gap: 6px; margin-top: 4px; }
+    .search-box input { flex: 1; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; }
+    .btn-search { padding: 0 12px; background: #0f766e; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; }
+    .btn-search:hover { background: #115e59; }
+
     .form-row { display: flex; gap: 10px; }
     .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
     .form-group label { font-size: 0.8rem; color: #374151; font-weight: 600; }
@@ -179,7 +184,12 @@
     </div>
 
     <!-- Step 1: Route Setup -->
-    <div class="section-title">1. Route Coordinates</div>
+    <div class="section-title">1. Route Location Search</div>
+    <div class="search-box">
+      <input type="text" id="trip-search-input" placeholder="Search location name (e.g. Gangtok)" />
+      <button class="btn-search" onclick="searchTripLocation()">Search</button>
+    </div>
+
     <div class="form-group">
       <label>Start Location (Lat, Lon)</label>
       <input type="text" id="trip-start" placeholder="Click map or type: 26.7132, 88.4323" />
@@ -260,6 +270,7 @@
     let map, routeLayer = null, poiMarkers = [], blockedRectangles = [], blockedBoxes = [];
     let weatherRouteMarkers = [];
     let isBlockMode = false, blockStartCorner = null;
+    let placeSearchMarker = null;
 
     function setLoading(isLoading, message = 'Working...') {
       document.getElementById('loading-message').textContent = message;
@@ -298,7 +309,6 @@
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Fetch active disaster hazard boxes on load
       fetchActiveDisasters();
 
       map.on('click', (e) => {
@@ -317,6 +327,53 @@
           endInput.value = coords;
         }
       });
+    }
+
+    async function searchTripLocation() {
+      const query = document.getElementById("trip-search-input").value.trim();
+      if (!query) {
+        showNotice("Please enter a location name to search.", "warning");
+        return;
+      }
+
+      setLoading(true, "Searching location...");
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        const res = await fetch(url);
+        const results = await res.json();
+
+        if (results && results.length > 0) {
+          const { lat, lon, display_name } = results[0];
+          const latitude = parseFloat(lat);
+          const longitude = parseFloat(lon);
+          const coordStr = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+          map.flyTo([latitude, longitude], 14);
+
+          if (placeSearchMarker) map.removeLayer(placeSearchMarker);
+          placeSearchMarker = L.marker([latitude, longitude])
+            .addTo(map)
+            .bindPopup(`<b>${display_name}</b>`)
+            .openPopup();
+
+          const startInput = document.getElementById("trip-start");
+          const endInput = document.getElementById("trip-end");
+
+          if (!startInput.value.trim()) {
+            startInput.value = coordStr;
+          } else {
+            endInput.value = coordStr;
+          }
+
+          showNotice(`Found: ${display_name.split(',')[0]}`, 'success', 3000);
+        } else {
+          showNotice("Location not found. Try a more specific name.", "warning");
+        }
+      } catch (err) {
+        showNotice("Geocoding service unavailable.", "error");
+      } finally {
+        setLoading(false);
+      }
     }
 
     async function fetchActiveDisasters() {
@@ -556,12 +613,10 @@
         style: { color: '#059669', weight: 6, opacity: 0.8 }
       }).addTo(map);
 
-      // Render live weather along itinerary route
       if (data.route_geometry && data.route_geometry.coordinates) {
         fetchAndDisplayRouteWeather(data.route_geometry.coordinates);
       }
 
-      // Summary Header
       document.getElementById("trip-summary").innerHTML = `
         <div style="background:#ecfdf5; padding:12px; border-radius:6px; border:1px solid #a7f3d0; margin-top:10px;">
           <h4 style="color:#065f46;">${data.title}</h4>
@@ -571,7 +626,6 @@
         </div>
       `;
 
-      // Itinerary List
       const container = document.getElementById("itinerary-list");
       container.innerHTML = '<h4 style="margin-top:12px;">Day-by-Day Itinerary:</h4>';
 
@@ -601,7 +655,6 @@
               </div>
             `;
 
-            // Add Map Marker
             const marker = L.marker([poi.latitude, poi.longitude])
               .bindPopup(`<b>${iconSymbol} ${poi.name}</b><br>${poi.description}<br><small>Detour: +${poi.detour_distance_km} km</small>`)
               .addTo(map);
