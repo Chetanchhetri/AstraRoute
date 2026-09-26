@@ -812,8 +812,1427 @@
 
       }
     </style>
+    <style>
+      :root {
+        --ink: #102a43;
+        --ink-deep: #081f2d;
+        --muted: #5f7485;
+        --line: #d7e3e5;
+        --paper: #ffffff;
+        --canvas: #f5f8f8;
+        --brand: #0d766d;
+        --brand-dark: #07564f;
+        --brand-soft: #e5f4f1;
+        --amber: #d18a2d;
+        --amber-soft: #fff4df;
+        --shadow: 0 24px 70px rgba(8, 31, 45, 0.11);
+        --shadow-small: 0 10px 30px rgba(8, 31, 45, 0.07);
+      }
+
+      body {
+        color: var(--ink);
+        background: var(--canvas);
+        letter-spacing: -0.01em;
+      }
+
+      .container {
+        width: min(1180px, calc(100% - 64px));
+      }
+
+      .site-header {
+        border-bottom-color: rgba(255, 255, 255, 0.18);
+        background: rgba(8, 31, 45, 0.08);
+      }
+
+      .site-header.is-scrolled {
+        border-bottom-color: rgba(215, 227, 229, 0.9);
+        background: rgba(248, 251, 251, 0.88);
+        box-shadow: 0 8px 30px rgba(8, 31, 45, 0.06);
+      }
+
+      .brand {
+        gap: 12px;
+        font-size: 0.98rem;
+        letter-spacing: -0.04em;
+      }
+
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 1rem;
+      }
+
+      .site-header.is-scrolled .brand-mark {
+        border-color: #b5d5d1;
+        background: var(--brand-soft);
+      }
+
+      .nav-links {
+        gap: 32px;
+        font-size: 0.78rem;
+        letter-spacing: 0.01em;
+      }
+
+      .nav-cta {
+        padding: 10px 14px;
+        border-radius: 7px;
+      }
+
+      .hero {
+        min-height: 790px;
+        overflow: hidden;
+        background-position: center;
+      }
+
+      .scroll-progress {
+        position: fixed;
+        z-index: 20;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        pointer-events: none;
+      }
+
+      .scroll-progress span {
+        display: block;
+        width: var(--scroll-progress, 0%);
+        height: 100%;
+        background: linear-gradient(90deg, var(--amber), #78cfc0);
+        box-shadow: 0 0 12px rgba(120, 207, 192, 0.35);
+        transform-origin: left center;
+        transition: width 120ms linear;
+      }
+
+      .hero::before {
+        background:
+          linear-gradient(90deg, rgba(5, 24, 35, 0.91) 0%, rgba(5, 24, 35, 0.65) 46%, rgba(5, 24, 35, 0.3) 100%),
+          radial-gradient(circle at 58% 46%, rgba(18, 106, 99, 0.18), transparent 28%),
+          linear-gradient(180deg, rgba(6, 35, 42, 0.25), rgba(6, 35, 42, 0.58));
+      }
+
+      .hero::after {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        content: "";
+        opacity: 0.14;
+        background-image: linear-gradient(rgba(191, 244, 234, 0.35) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(191, 244, 234, 0.35) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: linear-gradient(90deg, black, transparent 75%);
+      }
+
+      .hero-layout {
+        gap: 96px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-content {
+        width: min(700px, 100%);
+        padding: 160px 0 112px;
+      }
+
+      .eyebrow {
+        margin-bottom: 24px;
+        color: #bcebe2;
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+      }
+
+      .eyebrow::before {
+        width: 34px;
+        height: 1px;
+        background: var(--amber);
+      }
+
+      h1 {
+        max-width: 680px;
+        font-size: clamp(3.7rem, 7.2vw, 6.7rem);
+        line-height: 0.94;
+        letter-spacing: -0.085em;
+        text-wrap: balance;
+      }
+
+      .hero-copy {
+        max-width: 550px;
+        margin-top: 30px;
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .hero-actions {
+        gap: 10px;
+        margin-top: 34px;
+      }
+
+      .button {
+        min-height: 48px;
+        padding: 12px 18px;
+        border-radius: 7px;
+        font-size: 0.78rem;
+        letter-spacing: 0.01em;
+      }
+
+      .button-primary {
+        background: var(--brand);
+        box-shadow: 0 10px 25px rgba(13, 118, 109, 0.25);
+      }
+
+      .button-primary:hover {
+        background: #138a7f;
+      }
+
+      .button-light {
+        border-color: rgba(255, 255, 255, 0.32);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .hero-note {
+        margin-top: 24px;
+        color: rgba(255, 255, 255, 0.54);
+        font-size: 0.72rem;
+      }
+
+      .hero-panel {
+        width: 300px;
+        flex-basis: 300px;
+        padding: 22px;
+        border-color: rgba(191, 244, 234, 0.3);
+        border-radius: 10px;
+        background: rgba(6, 30, 39, 0.64);
+        box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28);
+      }
+
+      .hero-panel-label {
+        padding-bottom: 16px;
+        font-size: 0.62rem;
+        letter-spacing: 0.13em;
+      }
+
+      .hero-route {
+        gap: 22px;
+        margin: 24px 0 26px;
+      }
+
+      .hero-route-stop strong {
+        font-size: 0.9rem;
+        letter-spacing: -0.02em;
+      }
+
+      .intro {
+        padding: 132px 0 112px;
+        background:
+          radial-gradient(circle at 90% 0%, rgba(229, 244, 241, 0.8), transparent 36%),
+          var(--paper);
+      }
+
+      .intro::before {
+        width: 42%;
+        opacity: 0.45;
+        background: linear-gradient(135deg, transparent 0 50%, rgba(229, 244, 241, 0.55));
+        transform: translate3d(0, var(--section-shift, 0px), 0);
+        transition: transform 120ms linear;
+      }
+
+      .intro-head {
+        gap: 64px;
+      }
+
+      .section-kicker {
+        margin-bottom: 16px;
+        color: var(--brand);
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+      }
+
+      h2 {
+        max-width: 680px;
+        font-size: clamp(2.35rem, 4.2vw, 4rem);
+        line-height: 1;
+        letter-spacing: -0.075em;
+        text-wrap: balance;
+      }
+
+      .section-copy {
+        max-width: 580px;
+        margin-top: 22px;
+        font-size: 0.98rem;
+        line-height: 1.75;
+      }
+
+      .intro-meta {
+        min-width: 190px;
+        padding: 10px 0 10px 20px;
+        border-left-width: 1px;
+        border-left-color: var(--amber);
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+      }
+
+      .intro-meta strong {
+        color: var(--ink);
+        font-size: 2.6rem;
+      }
+
+      .feature-grid {
+        gap: 18px;
+        margin-top: 64px;
+      }
+
+      .feature {
+        padding: 28px;
+        border-color: var(--line);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.76);
+        box-shadow: 0 1px 0 rgba(8, 31, 45, 0.02);
+      }
+
+      .feature:hover {
+        border-color: #9bc9c3;
+        box-shadow: var(--shadow-small);
+        transform: translateY(-3px);
+      }
+
+      .feature--hero {
+        min-height: 316px;
+        background: linear-gradient(145deg, #e8f5f2, #f6fbfa);
+        box-shadow: none;
+      }
+
+      .feature--hero:nth-child(2) {
+        background: linear-gradient(145deg, #eef7f6, #f8fbfb);
+      }
+
+      .feature-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 26px;
+        border: 1px solid rgba(13, 118, 109, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 1.08rem;
+      }
+
+      .feature--hero .feature-icon {
+        color: var(--brand-dark);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .feature--hero h3 {
+        max-width: 430px;
+        font-size: 1.34rem;
+        line-height: 1.12;
+      }
+
+      .feature h3 {
+        font-size: 1rem;
+        letter-spacing: -0.035em;
+      }
+
+      .feature p {
+        margin-top: 12px;
+        font-size: 0.84rem;
+        line-height: 1.65;
+      }
+
+      .feature-grid .feature:nth-child(3),
+      .feature-grid .feature:nth-child(6) {
+        background: #fffaf2;
+      }
+
+      .feature-grid .feature:nth-child(4),
+      .feature-grid .feature:nth-child(5) {
+        background: #f1f8f7;
+      }
+
+      .signal-strip {
+        margin-top: 76px;
+        border-top-color: var(--line);
+        border-bottom-color: var(--line);
+      }
+
+      .signal {
+        padding: 22px 24px;
+      }
+
+      .signal strong {
+        color: var(--ink);
+        font-size: 1.15rem;
+        letter-spacing: -0.04em;
+      }
+
+      .signal span {
+        margin-top: 6px;
+        font-size: 0.72rem;
+      }
+
+      .workflow {
+        position: relative;
+        overflow: hidden;
+        padding: 128px 0;
+        background: var(--canvas);
+      }
+
+      .workflow::before {
+        position: absolute;
+        inset: 0;
+        content: "";
+        opacity: 0.32;
+        background-image: linear-gradient(rgba(13, 118, 109, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(13, 118, 109, 0.07) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(90deg, black, transparent 70%);
+        transform: translate3d(0, var(--section-shift, 0px), 0);
+        transition: transform 120ms linear;
+        pointer-events: none;
+      }
+
+      .workflow-layout {
+        position: relative;
+        gap: 96px;
+      }
+
+      .workflow-list {
+        margin-top: 48px;
+      }
+
+      .workflow-step {
+        grid-template-columns: 40px 1fr;
+        gap: 17px;
+        padding-bottom: 32px;
+        position: relative;
+      }
+
+      .workflow-step:not(:last-child)::after {
+        position: absolute;
+        top: 35px;
+        bottom: 3px;
+        left: 15px;
+        width: 1px;
+        content: "";
+        background: linear-gradient(var(--brand), rgba(13, 118, 109, 0.08));
+        transform-origin: top;
+        transform: scaleY(0);
+        transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1) 180ms;
+      }
+
+      .workflow-step.is-visible:not(:last-child)::after {
+        transform: scaleY(1);
+      }
+
+      .step-number {
+        width: 32px;
+        height: 32px;
+        border-color: #a9cec9;
+        border-radius: 8px;
+        background: var(--brand-soft);
+        font-size: 0.7rem;
+      }
+
+      .workflow-step h3 {
+        margin-top: 2px;
+        font-size: 1rem;
+        letter-spacing: -0.035em;
+      }
+
+      .workflow-step p {
+        font-size: 0.84rem;
+      }
+
+      .journey-panel {
+        padding: 30px;
+        border-color: var(--line);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+      }
+
+      .journey-top {
+        padding-bottom: 20px;
+      }
+
+      .journey-top strong {
+        font-size: 1rem;
+        letter-spacing: -0.03em;
+      }
+
+      .status {
+        color: var(--brand);
+        font-size: 0.68rem;
+        letter-spacing: 0.02em;
+      }
+
+      .route-line {
+        gap: 30px;
+        margin: 30px 0;
+      }
+
+      .route-stop strong {
+        font-size: 0.98rem;
+      }
+
+      .metric {
+        padding: 14px;
+        border: 1px solid #e3eded;
+        border-radius: 7px;
+        background: #f6fafa;
+      }
+
+      .metric strong {
+        font-size: 0.9rem;
+      }
+
+      .cta {
+        position: relative;
+        overflow: hidden;
+        padding: 112px 0;
+        background:
+          radial-gradient(circle at 85% 50%, rgba(54, 151, 137, 0.3), transparent 32%),
+          var(--brand-dark);
+      }
+
+      .cta::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        opacity: 0.13;
+        background-image: linear-gradient(rgba(191, 244, 234, 0.45) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(191, 244, 234, 0.45) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: linear-gradient(90deg, transparent, black);
+        pointer-events: none;
+      }
+
+      .cta-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      .cta h2 {
+        font-size: clamp(2.45rem, 4.2vw, 4rem);
+      }
+
+      .cta p {
+        margin-top: 20px;
+        font-size: 0.95rem;
+      }
+
+      .cta .button-primary {
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        color: var(--brand-dark);
+      }
+
+      footer {
+        padding: 28px 0;
+        background: #edf3f3;
+        font-size: 0.72rem;
+      }
+
+      @media (max-width: 760px) {
+        .container {
+          width: min(100% - 32px, 1180px);
+        }
+
+        .hero {
+          min-height: 850px;
+        }
+
+        .hero-content {
+          padding: 138px 0 50px;
+        }
+
+        .hero-layout {
+          gap: 0;
+        }
+
+        h1 {
+          font-size: clamp(3.2rem, 15vw, 5rem);
+        }
+
+        .hero-panel {
+          width: min(100%, 340px);
+          margin-top: 30px;
+        }
+
+        .intro,
+        .workflow,
+        .cta {
+          padding: 82px 0;
+        }
+
+        .intro-head {
+          gap: 30px;
+        }
+
+        h2 {
+          font-size: clamp(2.25rem, 11vw, 3.4rem);
+        }
+
+        .feature-grid {
+          margin-top: 46px;
+        }
+
+        .signal-strip {
+          margin-top: 54px;
+        }
+
+        .workflow-layout {
+          gap: 56px;
+        }
+
+        .journey-panel {
+          padding: 22px;
+        }
+
+        .cta-inner {
+          align-items: flex-start;
+        }
+      }
+
+      /* Motion system: transform and opacity only for predictable, low-cost effects. */
+      .reveal,
+      .reveal-on-scroll,
+      .reveal-heading {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0);
+        transition:
+          opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: opacity, transform;
+      }
+
+      .reveal-heading {
+        transform: translate3d(0, 24px, 0);
+        clip-path: inset(0 0 100% 0);
+        transition:
+          opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 650ms cubic-bezier(0.22, 1, 0.36, 1),
+          clip-path 800ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .hero .reveal {
+        animation: hero-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .hero .reveal:nth-child(2) {
+        animation-delay: 140ms;
+      }
+
+      .reveal.is-visible,
+      .reveal-on-scroll.is-visible,
+      .reveal-heading.is-visible {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+        clip-path: inset(0 0 0 0);
+      }
+
+      .hero .reveal:nth-child(1) { transition-delay: 80ms; }
+      .hero .reveal:nth-child(2) { transition-delay: 220ms; }
+      .hero .hero-panel.is-visible { animation: hero-panel-float 7s ease-in-out 900ms infinite; }
+
+      .feature.reveal-on-scroll:nth-child(2) { transition-delay: 90ms; }
+      .feature.reveal-on-scroll:nth-child(3) { transition-delay: 140ms; }
+      .feature.reveal-on-scroll:nth-child(4) { transition-delay: 190ms; }
+      .feature.reveal-on-scroll:nth-child(5) { transition-delay: 240ms; }
+      .feature.reveal-on-scroll:nth-child(6) { transition-delay: 290ms; }
+      .workflow-step.reveal-on-scroll:nth-child(1) { transition-delay: 80ms; }
+      .workflow-step.reveal-on-scroll:nth-child(2) { transition-delay: 170ms; }
+      .workflow-step.reveal-on-scroll:nth-child(3) { transition-delay: 260ms; }
+
+      .feature,
+      .journey-panel,
+      .button {
+        transition:
+          transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+          border-color 300ms ease,
+          background-color 300ms ease;
+      }
+
+      .journey-panel {
+        transform: translate3d(var(--journey-x, 0px), var(--journey-y, 0px), 0);
+      }
+
+      .feature:hover,
+      .journey-panel:hover {
+        transform: translate3d(var(--journey-x, 0px), calc(var(--journey-y, 0px) - 5px), 0);
+      }
+
+      .feature:active,
+      .journey-panel:active {
+        transform: translate3d(var(--journey-x, 0px), calc(var(--journey-y, 0px) - 1px), 0);
+      }
+
+      .button:hover {
+        transform: translate3d(0, -2px, 0);
+      }
+
+      .button:active {
+        transform: translate3d(0, 1px, 0) scale(0.985);
+      }
+
+      .hero {
+        background-position: center var(--hero-parallax, center);
+      }
+
+      .hero-route::before,
+      .route-line::before {
+        transform-origin: top;
+        transform: scaleY(0);
+        transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1) 220ms;
+      }
+
+      .hero-panel.is-visible .hero-route::before,
+      .journey-panel.is-visible .route-line::before {
+        transform: scaleY(1);
+      }
+
+      .hero-route-stop,
+      .route-stop {
+        opacity: 0;
+        transform: translate3d(-8px, 0, 0);
+        transition:
+          opacity 500ms ease,
+          transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .hero-panel.is-visible .hero-route-stop,
+      .journey-panel.is-visible .route-stop {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+
+      .hero-panel.is-visible .hero-route-stop:nth-child(2),
+      .journey-panel.is-visible .route-stop:nth-child(2) { transition-delay: 180ms; }
+      .hero-panel.is-visible .hero-route-stop:nth-child(3),
+      .journey-panel.is-visible .route-stop:nth-child(3) { transition-delay: 360ms; }
+
+      @keyframes hero-panel-float {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(0, -5px, 0); }
+      }
+
+      @keyframes hero-enter {
+        from {
+          opacity: 0;
+          transform: translate3d(0, 18px, 0);
+        }
+        to {
+          opacity: 1;
+          transform: translate3d(0, 0, 0);
+        }
+      }
+
+      .hero-geospatial {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        overflow: hidden;
+        opacity: 0.92;
+        pointer-events: none;
+        transform: translate3d(var(--geo-x, 0px), var(--geo-y, 0px), 0) scale(1.04);
+        transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .hero-geospatial::before,
+      .hero-geospatial::after {
+        position: absolute;
+        content: "";
+        pointer-events: none;
+      }
+
+      .hero-geospatial::before {
+        inset: 8% -8% 0;
+        opacity: 0.32;
+        background:
+          radial-gradient(ellipse at 72% 35%, rgba(93, 174, 157, 0.22), transparent 34%),
+          linear-gradient(135deg, transparent 30%, rgba(10, 43, 49, 0.5));
+        filter: blur(18px);
+      }
+
+      .hero-geospatial::after {
+        inset: 0;
+        background: linear-gradient(180deg, rgba(3, 21, 31, 0.08), rgba(3, 21, 31, 0.36));
+      }
+
+      .hero-geospatial svg {
+        position: absolute;
+        top: 4%;
+        right: -2%;
+        width: 72%;
+        height: 92%;
+        opacity: 0.8;
+        overflow: visible;
+      }
+
+      .terrain-ridge {
+        fill: none;
+        stroke: rgba(170, 221, 209, 0.2);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .terrain-ridge--soft {
+        stroke: rgba(170, 221, 209, 0.1);
+      }
+
+      .terrain-shadow {
+        fill: rgba(3, 27, 38, 0.28);
+      }
+
+      .geo-route {
+        fill: none;
+        stroke: #d5a04c;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2.4;
+        stroke-dasharray: 720;
+        stroke-dashoffset: 720;
+        filter: drop-shadow(0 0 6px rgba(209, 138, 45, 0.35));
+        vector-effect: non-scaling-stroke;
+        animation: route-draw 1800ms cubic-bezier(0.22, 1, 0.36, 1) 450ms forwards;
+      }
+
+      .geo-route-secondary {
+        fill: none;
+        stroke: rgba(188, 226, 216, 0.28);
+        stroke-width: 1;
+        stroke-dasharray: 5 10;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .geo-node {
+        fill: #082b35;
+        stroke: #b8e2d8;
+        stroke-width: 1.5;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .geo-node--destination {
+        fill: #b77b2b;
+        stroke: #f3d49a;
+      }
+
+      .geo-node-halo {
+        fill: none;
+        stroke: rgba(207, 237, 228, 0.45);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+        animation: node-halo 4.5s ease-out 2.1s infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      .geo-label {
+        fill: rgba(220, 242, 235, 0.58);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+
+      @keyframes route-draw {
+        to { stroke-dashoffset: 0; }
+      }
+
+      @keyframes node-halo {
+        0% { opacity: 0.5; transform: scale(0.85); }
+        70%, 100% { opacity: 0; transform: scale(2.1); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .reveal,
+        .reveal-on-scroll,
+        .reveal-heading,
+        .hero-route-stop,
+        .route-stop {
+          opacity: 1;
+          transform: none;
+          clip-path: none;
+          transition: none;
+        }
+
+        .hero-panel.is-visible { animation: none; }
+        .hero .reveal { animation: none; }
+        .hero-route::before,
+        .route-line::before { transform: scaleY(1); transition: none; }
+        .hero-geospatial { transform: none; }
+        .geo-route { animation: none; stroke-dashoffset: 0; }
+        .geo-node-halo { animation: none; opacity: 0; }
+        .scroll-progress span { transition: none; }
+        .intro::before,
+        .workflow::before { transition: none; transform: none; }
+      }
+
+      @media (max-width: 760px) {
+        .hero-geospatial {
+          right: -22%;
+          left: -22%;
+          opacity: 0.38;
+          transform: none;
+        }
+
+        .hero-geospatial svg {
+          top: 9%;
+          right: -18%;
+          width: 112%;
+          height: 72%;
+        }
+
+        .geo-route {
+          stroke-width: 2;
+        }
+      }
+
+      .product-demo {
+        position: relative;
+        margin-top: 20px;
+        color: var(--muted);
+        font-size: 0.65rem;
+        letter-spacing: 0.02em;
+      }
+
+      .route-demo {
+        display: grid;
+        gap: 7px;
+        padding: 10px 12px;
+        border: 1px solid rgba(13, 118, 109, 0.14);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .demo-route-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        gap: 9px;
+        opacity: 0.5;
+        transition: opacity 250ms ease, transform 250ms ease;
+      }
+
+      .demo-route-row:hover,
+      .demo-route-row.is-selected {
+        opacity: 1;
+        transform: translateX(3px);
+      }
+
+      .demo-route-row b {
+        color: var(--ink);
+        font-size: 0.68rem;
+      }
+
+      .demo-route-line {
+        display: block;
+        height: 3px;
+        border-radius: 99px;
+        background: #8cbeb7;
+      }
+
+      .demo-route-row:first-child .demo-route-line {
+        background: var(--brand);
+      }
+
+      .demo-route-row small {
+        min-width: 48px;
+        color: var(--muted);
+        font-size: 0.62rem;
+        text-align: right;
+      }
+
+      .hazard-demo {
+        height: 56px;
+        overflow: hidden;
+        border-top: 1px solid rgba(13, 118, 109, 0.14);
+        border-bottom: 1px solid rgba(13, 118, 109, 0.14);
+      }
+
+      .hazard-zone {
+        position: absolute;
+        top: 17px;
+        left: 45%;
+        z-index: 2;
+        padding: 3px 5px;
+        border: 1px solid rgba(181, 91, 57, 0.4);
+        border-radius: 3px;
+        color: #a45338;
+        background: rgba(255, 235, 224, 0.9);
+        font-size: 0.5rem;
+        letter-spacing: 0.08em;
+      }
+
+      .hazard-pin {
+        position: absolute;
+        top: 22px;
+        left: 56%;
+        width: 14px;
+        height: 14px;
+        border: 1px dashed rgba(181, 91, 57, 0.5);
+        border-radius: 3px;
+        transform: rotate(45deg);
+      }
+
+      .hazard-path {
+        position: absolute;
+        left: 3%;
+        width: 92%;
+        height: 18px;
+        border-top: 2px solid;
+        border-radius: 50%;
+        transform-origin: left center;
+      }
+
+      .hazard-path--direct {
+        top: 28px;
+        border-color: rgba(181, 91, 57, 0.42);
+        transform: rotate(2deg);
+      }
+
+      .hazard-path--bypass {
+        top: 31px;
+        border-color: var(--brand);
+        transform: rotate(-11deg) scaleX(0.92);
+        animation: bypass-route 3.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+      }
+
+      @keyframes bypass-route {
+        0%, 100% { transform: rotate(-11deg) scaleX(0.92) translateY(0); }
+        50% { transform: rotate(-17deg) scaleX(1) translateY(-10px); }
+      }
+
+      .weather-demo {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        align-items: center;
+        column-gap: 8px;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid rgba(13, 118, 109, 0.15);
+        border-radius: 7px;
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.55);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .weather-demo:hover {
+        border-color: #9bc9c3;
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      .weather-icon {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 50%;
+        color: #b27727;
+        background: var(--amber-soft);
+        font-size: 1rem;
+        transition: transform 450ms ease;
+      }
+
+      .weather-demo:hover .weather-icon {
+        transform: rotate(24deg) scale(1.08);
+      }
+
+      .weather-reading {
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+
+      .weather-demo small {
+        grid-column: 2;
+        color: var(--muted);
+        font-size: 0.58rem;
+      }
+
+      .itinerary-demo {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 26px;
+        padding: 0 8px;
+      }
+
+      .itinerary-progress {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        height: 1px;
+        background: #b4d6d1;
+      }
+
+      .itinerary-demo i {
+        position: relative;
+        z-index: 1;
+        width: 9px;
+        height: 9px;
+        border: 2px solid var(--brand);
+        border-radius: 50%;
+        background: #f1f8f7;
+        animation: itinerary-stop 2.8s ease-in-out infinite;
+      }
+
+      .itinerary-demo i:nth-of-type(2) { animation-delay: 220ms; }
+      .itinerary-demo i:nth-of-type(3) { animation-delay: 440ms; }
+
+      @keyframes itinerary-stop {
+        0%, 100% { opacity: 0.45; transform: scale(0.8); }
+        45% { opacity: 1; transform: scale(1.15); }
+      }
+
+      .privacy-demo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 11px;
+        border-top: 1px solid rgba(13, 118, 109, 0.14);
+      }
+
+      .privacy-lock {
+        display: grid;
+        width: 22px;
+        height: 22px;
+        place-items: center;
+        border: 1px solid #8cbeb7;
+        border-radius: 6px;
+        color: var(--brand);
+        background: var(--brand-soft);
+        font-size: 0.65rem;
+        transition: transform 350ms ease, background-color 350ms ease;
+      }
+
+      .feature:hover .privacy-lock {
+        background: #d2eee8;
+        transform: rotate(-8deg) scale(1.08);
+      }
+
+      .journey-map-demo {
+        position: relative;
+        height: 48px;
+        margin-top: 20px;
+        overflow: hidden;
+        border-top: 1px solid #e3eded;
+        background:
+          linear-gradient(145deg, transparent 48%, rgba(13, 118, 109, 0.06) 49%, transparent 50%),
+          linear-gradient(35deg, transparent 48%, rgba(13, 118, 109, 0.05) 49%, transparent 50%);
+        background-size: 54px 38px;
+        transform: translateZ(0);
+      }
+
+      .journey-map-route {
+        position: absolute;
+        top: 24px;
+        left: 7%;
+        width: 86%;
+        height: 18px;
+        border-top: 2px solid var(--brand);
+        border-radius: 50%;
+        transform: rotate(-7deg);
+        transform-origin: left;
+        animation: journey-route-draw 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      @keyframes journey-route-draw {
+        from { opacity: 0; transform: rotate(-7deg) scaleX(0); }
+        to { opacity: 1; transform: rotate(-7deg) scaleX(1); }
+      }
+
+      .journey-map-node {
+        position: absolute;
+        top: 19px;
+        width: 11px;
+        height: 11px;
+        padding: 0;
+        border: 2px solid var(--brand);
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        transition: transform 250ms ease, box-shadow 250ms ease;
+      }
+
+      .journey-map-node:hover,
+      .journey-map-node:focus-visible {
+        outline: none;
+        transform: scale(1.5);
+        box-shadow: 0 0 0 5px rgba(13, 118, 109, 0.12);
+      }
+
+      .journey-map-node--start { left: 5%; }
+      .journey-map-node--end {
+        right: 5%;
+        border-color: var(--amber);
+        background: var(--amber-soft);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hazard-path--bypass,
+        .itinerary-demo i,
+        .journey-map-route { animation: none; }
+      }
+
+      @media (max-width: 760px) {
+        .journey-map-demo { display: none; }
+        .product-demo { margin-top: 16px; }
+      }
+
+      /* Final polish: shared interaction language and surface hierarchy. */
+      :where(a, button):focus-visible {
+        outline: 2px solid #9ee2d4;
+        outline-offset: 4px;
+      }
+
+      :where(a, button) {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .site-header {
+        backdrop-filter: blur(0);
+        transition:
+          background-color 320ms ease,
+          border-color 320ms ease,
+          box-shadow 320ms ease,
+          backdrop-filter 320ms ease;
+      }
+
+      .site-header.is-scrolled {
+        backdrop-filter: blur(16px) saturate(120%);
+      }
+
+      .nav-links a {
+        position: relative;
+        transition: color 220ms ease, opacity 220ms ease, background-color 220ms ease;
+      }
+
+      .nav-links a:not(.nav-cta)::after {
+        position: absolute;
+        right: 0;
+        bottom: -8px;
+        left: 0;
+        height: 1px;
+        content: "";
+        background: currentColor;
+        opacity: 0;
+        transform: scaleX(0.4);
+        transition: opacity 220ms ease, transform 220ms ease;
+      }
+
+      .nav-links a:not(.nav-cta):hover::after,
+      .nav-links a:not(.nav-cta):focus-visible::after {
+        opacity: 0.7;
+        transform: scaleX(1);
+      }
+
+      .nav-cta {
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+      }
+
+      .site-header.is-scrolled .nav-cta {
+        box-shadow: 0 4px 14px rgba(8, 31, 45, 0.05);
+      }
+
+      .button {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px rgba(8, 31, 45, 0.08);
+      }
+
+      .button::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background: linear-gradient(105deg, transparent 22%, rgba(255, 255, 255, 0.14) 50%, transparent 78%);
+        opacity: 0;
+        transform: translateX(-110%);
+        transition: opacity 300ms ease, transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+        pointer-events: none;
+      }
+
+      .button:hover::after,
+      .button:focus-visible::after {
+        opacity: 1;
+        transform: translateX(110%);
+      }
+
+      .button-primary {
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 12px 26px rgba(13, 118, 109, 0.22);
+      }
+
+      .feature {
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 8px 24px rgba(8, 31, 45, 0.035);
+        background-image: radial-gradient(
+          circle at var(--card-x, 50%) var(--card-y, 0%),
+          rgba(255, 255, 255, 0.52),
+          transparent 38%
+        );
+      }
+
+      .feature::before,
+      .journey-panel::before,
+      .hero-panel::before {
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: inherit;
+        content: "";
+        pointer-events: none;
+      }
+
+      .feature,
+      .journey-panel,
+      .hero-panel {
+        position: relative;
+        isolation: isolate;
+      }
+
+      .feature-icon {
+        font-family: "Segoe UI Symbol", Inter, sans-serif;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(8, 31, 45, 0.04);
+      }
+
+      .signal {
+        position: relative;
+        transition: background-color 240ms ease, transform 240ms ease;
+      }
+
+      .signal:hover {
+        background: rgba(229, 244, 241, 0.36);
+        transform: translateY(-2px);
+      }
+
+      .journey-panel {
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 24px 70px rgba(8, 31, 45, 0.1);
+      }
+
+      .journey-panel.is-visible {
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.8) inset,
+          0 24px 70px rgba(8, 31, 45, 0.1),
+          0 0 0 1px rgba(13, 118, 109, 0.05);
+      }
+
+      .status::before {
+        box-shadow: 0 0 0 3px rgba(34, 160, 107, 0.1);
+      }
+
+      footer {
+        position: relative;
+        border-top: 1px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent),
+          #edf3f3;
+      }
+
+      footer::before {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 48px;
+        height: 1px;
+        content: "";
+        background: var(--amber);
+        transform: translateX(-50%);
+      }
+
+      .footer-inner h3 {
+        color: #496576;
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+      }
+
+      .nav-links a.is-active {
+        color: var(--brand);
+      }
+
+      .site-header:not(.is-scrolled) .nav-links a.is-active {
+        color: #d9f8ef;
+      }
+
+      .nav-links a.is-active::after {
+        opacity: 0.7;
+        transform: scaleX(1);
+      }
+
+      .feature-icon {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-icon::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), transparent 60%);
+        pointer-events: none;
+      }
+
+      @media (max-width: 760px) {
+        .container {
+          width: min(100% - 32px, 1180px);
+        }
+
+        .nav {
+          min-height: 68px;
+        }
+
+        .nav-links {
+          gap: 8px;
+        }
+
+        .nav-cta {
+          padding: 9px 11px;
+          font-size: 0.7rem;
+        }
+
+        .hero-actions {
+          align-items: stretch;
+        }
+
+        .hero-actions .button {
+          flex: 1 1 auto;
+        }
+
+        .journey-panel {
+          box-shadow: 0 18px 45px rgba(8, 31, 45, 0.1);
+        }
+
+        h1 {
+          text-wrap: pretty;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .site-header,
+        .nav-links a,
+        .nav-cta,
+        .button,
+        .button::after,
+        .feature,
+        .signal,
+        .journey-panel {
+          transition: none;
+        }
+
+        .workflow-step:not(:last-child)::after {
+          transition: none;
+          transform: scaleY(1);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
     <header class="site-header">
       <div class="container nav">
         <a class="brand" href="home.html" aria-label="AstraRoute home"
@@ -829,6 +2248,32 @@
 
     <main>
       <section class="hero">
+        <div class="hero-geospatial" aria-hidden="true">
+          <svg viewBox="0 0 900 700" role="presentation">
+            <path class="terrain-shadow" d="M0 530 C120 420 190 490 290 370 S470 290 560 370 S760 400 900 250 V700 H0 Z" />
+            <path class="terrain-shadow" d="M0 610 C140 520 220 550 330 460 S520 420 650 500 S780 520 900 410 V700 H0 Z" />
+            <path class="terrain-ridge" d="M-20 510 C110 398 190 470 282 355 S465 274 560 352 S755 382 925 220" />
+            <path class="terrain-ridge terrain-ridge--soft" d="M-30 542 C108 430 204 498 300 386 S474 306 574 380 S770 410 930 255" />
+            <path class="terrain-ridge" d="M-20 572 C120 460 214 526 315 417 S493 337 590 410 S785 442 930 290" />
+            <path class="terrain-ridge terrain-ridge--soft" d="M-20 603 C130 493 225 557 328 450 S515 372 610 440 S802 472 930 325" />
+            <path class="terrain-ridge" d="M-20 635 C122 526 242 589 350 482 S530 407 635 470 S818 505 930 360" />
+            <path class="terrain-ridge terrain-ridge--soft" d="M-20 668 C120 562 258 620 370 516 S550 445 660 505 S830 536 930 397" />
+            <path class="terrain-ridge terrain-ridge--soft" d="M180 80 C270 160 320 205 405 192 S535 100 650 150 S760 220 910 140" />
+            <path class="terrain-ridge" d="M130 126 C250 205 316 248 420 230 S548 142 670 190 S786 258 930 175" />
+            <path class="terrain-ridge terrain-ridge--soft" d="M80 180 C220 250 300 292 426 275 S570 190 690 238 S805 302 930 225" />
+            <path class="geo-route-secondary" d="M158 486 C255 432 310 455 380 400 S490 326 570 351 S680 375 786 293" />
+            <path class="geo-route" d="M158 486 C255 432 310 455 380 400 S490 326 570 351 S680 375 786 293" />
+            <circle class="geo-node-halo" cx="158" cy="486" r="8" />
+            <circle class="geo-node-halo" cx="570" cy="351" r="8" />
+            <circle class="geo-node-halo" cx="786" cy="293" r="8" />
+            <circle class="geo-node" cx="158" cy="486" r="5" />
+            <circle class="geo-node" cx="570" cy="351" r="5" />
+            <circle class="geo-node geo-node--destination" cx="786" cy="293" r="5" />
+            <text class="geo-label" x="132" y="510">START</text>
+            <text class="geo-label" x="548" y="375">WAYPOINT</text>
+            <text class="geo-label" x="766" y="317">DESTINATION</text>
+          </svg>
+        </div>
         <div class="container hero-layout">
           <div class="hero-content reveal">
             <div class="eyebrow">Route intelligence for real journeys</div>
@@ -877,12 +2322,12 @@
         </div>
       </section>
 
-      <section class="intro" id="capabilities">
+      <section class="intro reveal-on-scroll" id="capabilities">
         <div class="container">
           <div class="intro-head">
             <div class="intro-head-copy">
               <p class="section-kicker">One workspace, fewer surprises</p>
-              <h2>Everything you need to make a better journey decision.</h2>
+              <h2 class="reveal-heading">Everything you need to make a better journey decision.</h2>
               <p class="section-copy">
                 From a quick point-to-point route to a multi-day itinerary,
                 AstraRoute helps you understand what is ahead before you set
@@ -895,7 +2340,7 @@
             </div>
           </div>
           <div class="feature-grid">
-            <article class="feature feature--hero">
+            <article class="feature feature--hero reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">↗</div>
               <div>
                 <h3>Compare route options with the whole journey in view.</h3>
@@ -907,8 +2352,12 @@
               <div class="feature-visual" aria-hidden="true">
                 <span></span><span></span><span></span>
               </div>
+              <div class="product-demo route-demo" aria-hidden="true">
+                <div class="demo-route-row is-selected"><span class="demo-route-line"></span><b>08h 42m</b><small>1,184 km</small></div>
+                <div class="demo-route-row"><span class="demo-route-line"></span><b>09h 18m</b><small>1,226 km</small></div>
+              </div>
             </article>
-            <article class="feature feature--hero">
+            <article class="feature feature--hero reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">◌</div>
               <div>
                 <h3>Plan around disruptions</h3>
@@ -920,24 +2369,36 @@
               <div class="feature-visual" aria-hidden="true">
                 <span></span><span></span><span></span>
               </div>
+              <div class="product-demo hazard-demo" aria-hidden="true">
+                <span class="hazard-zone">BLOCKED</span>
+                <span class="hazard-path hazard-path--direct"></span>
+                <span class="hazard-path hazard-path--bypass"></span>
+                <span class="hazard-pin"></span>
+              </div>
             </article>
-            <article class="feature">
+            <article class="feature reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">⌁</div>
               <h3>Use weather context</h3>
               <p>
                 Review weather information around route waypoints so your plan
                 has useful context, not just a line on a map.
               </p>
+              <button class="product-demo weather-demo" type="button" aria-label="Change weather context">
+                <span class="weather-icon">☼</span><span class="weather-reading">24° clear</span><small>Waypoint context · tap to change</small>
+              </button>
             </article>
-            <article class="feature">
+            <article class="feature reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">◫</div>
               <h3>Build custom itineraries</h3>
               <p>
                 Choose travel mode, pace, budget, detour distance, and the
                 services or attractions you want along the way.
               </p>
+              <div class="product-demo itinerary-demo" aria-hidden="true">
+                <span class="itinerary-progress"></span><i></i><i></i><i></i>
+              </div>
             </article>
-            <article class="feature">
+            <article class="feature reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">+</div>
               <h3>Discover useful stops</h3>
               <p>
@@ -945,13 +2406,16 @@
                 heritage sites, and spiritual places.
               </p>
             </article>
-            <article class="feature">
+            <article class="feature reveal-on-scroll">
               <div class="feature-icon" aria-hidden="true">✓</div>
               <h3>Keep your plans private</h3>
               <p>
                 Sign in to use protected planning features and keep your saved
                 session separate from the public map view.
               </p>
+              <div class="product-demo privacy-demo" aria-hidden="true">
+                <span class="privacy-lock">✓</span><span>Protected session</span>
+              </div>
             </article>
           </div>
           <div class="signal-strip" aria-label="AstraRoute highlights">
@@ -970,13 +2434,13 @@
         </div>
       </section>
 
-      <section class="workflow" id="workflow">
+      <section class="workflow reveal-on-scroll" id="workflow">
         <div class="container workflow-layout">
           <div>
             <p class="section-kicker">From idea to itinerary</p>
-            <h2>A focused flow for the way you actually travel.</h2>
+            <h2 class="reveal-heading">A focused flow for the way you actually travel.</h2>
             <div class="workflow-list">
-              <div class="workflow-step">
+              <div class="workflow-step reveal-on-scroll">
                 <span class="step-number">1</span>
                 <div>
                   <h3>Set your start and destination</h3>
@@ -986,7 +2450,7 @@
                   </p>
                 </div>
               </div>
-              <div class="workflow-step">
+              <div class="workflow-step reveal-on-scroll">
                 <span class="step-number">2</span>
                 <div>
                   <h3>Shape the route</h3>
@@ -996,7 +2460,7 @@
                   </p>
                 </div>
               </div>
-              <div class="workflow-step">
+              <div class="workflow-step reveal-on-scroll">
                 <span class="step-number">3</span>
                 <div>
                   <h3>Review before you go</h3>
@@ -1008,7 +2472,7 @@
               </div>
             </div>
           </div>
-          <div class="journey-panel" aria-label="Route planning preview">
+          <div class="journey-panel reveal-on-scroll" aria-label="Route planning preview">
             <div class="journey-top">
               <strong>Your next journey</strong
               ><span class="status">Ready to plan</span>
@@ -1035,18 +2499,23 @@
               <div class="metric">
                 <small>Map context</small><strong>Live view</strong>
               </div>
+              <div class="journey-map-demo" aria-hidden="true">
+                <span class="journey-map-route"></span>
+                <button class="journey-map-node journey-map-node--start" type="button" aria-label="Siliguri start"></button>
+                <button class="journey-map-node journey-map-node--end" type="button" aria-label="New Delhi destination"></button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="cta">
+      <section class="cta reveal-on-scroll">
         <div class="container cta-inner">
           <div>
             <p class="section-kicker" style="color: #bff4ea">
               Your route starts here
             </p>
-            <h2>Turn a destination into a plan.</h2>
+            <h2 class="reveal-heading">Turn a destination into a plan.</h2>
             <p>
               Open the planner, choose your route, and let AstraRoute help you
               see the journey more clearly.
@@ -1066,10 +2535,172 @@
     </footer>
     <script>
       const siteHeader = document.querySelector(".site-header");
-      const updateHeader = () =>
+      const scrollProgress = document.querySelector(".scroll-progress");
+      const scrollSections = document.querySelectorAll(".intro, .workflow, .cta");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const observedElements = document.querySelectorAll(
+        ".reveal-on-scroll, .reveal-heading, .journey-panel"
+      );
+      const hero = document.querySelector(".hero");
+      const geoLayer = document.querySelector(".hero-geospatial");
+      const journeyPanel = document.querySelector(".journey-panel");
+      const weatherDemo = document.querySelector(".weather-demo");
+      const isCompactViewport = window.matchMedia("(max-width: 760px)");
+      const navSectionLinks = [...document.querySelectorAll('.nav-links a[href^="#"]')];
+      const navSections = navSectionLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+      const featureCards = document.querySelectorAll(".feature");
+      let scrollFrame = 0;
+      let pointerFrame = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+
+      const updateScrollState = () => {
         siteHeader.classList.toggle("is-scrolled", window.scrollY > 24);
-      updateHeader();
-      window.addEventListener("scroll", updateHeader, { passive: true });
+        const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollableHeight > 0
+          ? Math.min(window.scrollY / scrollableHeight, 1)
+          : 0;
+        scrollProgress.style.setProperty("--scroll-progress", `${progress * 100}%`);
+        if (!reducedMotion.matches) {
+          const shift = Math.min(window.scrollY * 0.12, 72);
+          hero.style.setProperty(
+            "--hero-parallax",
+            `calc(50% + ${shift}px)`
+          );
+          scrollSections.forEach((section) => {
+            const sectionOffset = section.getBoundingClientRect().top;
+            const sectionShift = Math.max(-18, Math.min(18, (window.innerHeight * 0.5 - sectionOffset) * 0.035));
+            section.style.setProperty("--section-shift", `${sectionShift}px`);
+          });
+          observedElements.forEach((element) => {
+            if (element.getBoundingClientRect().top < window.innerHeight * 0.92) {
+              element.classList.add("is-visible");
+            }
+          });
+        }
+        const activeSection = navSections.reduce((active, section) => {
+          return section.getBoundingClientRect().top <= siteHeader.offsetHeight + 80
+            ? section
+            : active;
+        }, null);
+        navSectionLinks.forEach((link) => {
+          const isActive = activeSection && link.getAttribute("href") === `#${activeSection.id}`;
+          link.classList.toggle("is-active", Boolean(isActive));
+          if (isActive) link.setAttribute("aria-current", "location");
+          else link.removeAttribute("aria-current");
+        });
+        scrollFrame = 0;
+      };
+
+      const requestScrollUpdate = () => {
+        if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScrollState);
+      };
+
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener("click", (event) => {
+          const target = document.querySelector(link.getAttribute("href"));
+          if (!target) return;
+          event.preventDefault();
+          const targetTop = target.getBoundingClientRect().top + window.scrollY - siteHeader.offsetHeight - 16;
+          window.scrollTo({
+            top: targetTop,
+            behavior: reducedMotion.matches ? "auto" : "smooth",
+          });
+          history.replaceState(null, "", link.getAttribute("href"));
+        });
+      });
+
+      const updateGeoDepth = () => {
+        geoLayer.style.setProperty("--geo-x", `${pointerX * 10}px`);
+        geoLayer.style.setProperty("--geo-y", `${pointerY * 7}px`);
+        pointerFrame = 0;
+      };
+
+      const handleHeroPointer = (event) => {
+        if (reducedMotion.matches || isCompactViewport.matches) return;
+        const bounds = hero.getBoundingClientRect();
+        pointerX = (event.clientX - bounds.left) / bounds.width - 0.5;
+        pointerY = (event.clientY - bounds.top) / bounds.height - 0.5;
+        if (!pointerFrame) pointerFrame = requestAnimationFrame(updateGeoDepth);
+      };
+
+      const resetHeroPointer = () => {
+        pointerX = 0;
+        pointerY = 0;
+        if (!pointerFrame) pointerFrame = requestAnimationFrame(updateGeoDepth);
+      };
+
+      featureCards.forEach((card) => {
+        card.addEventListener("pointermove", (event) => {
+          if (reducedMotion.matches || isCompactViewport.matches) return;
+          const bounds = card.getBoundingClientRect();
+          card.style.setProperty("--card-x", `${((event.clientX - bounds.left) / bounds.width) * 100}%`);
+          card.style.setProperty("--card-y", `${((event.clientY - bounds.top) / bounds.height) * 100}%`);
+        }, { passive: true });
+        card.addEventListener("pointerleave", () => {
+          card.style.removeProperty("--card-x");
+          card.style.removeProperty("--card-y");
+        }, { passive: true });
+      });
+
+      const weatherStates = [
+        ["24° clear", "Waypoint context · tap to change", "☼"],
+        ["19° light rain", "Monsoon window · tap to change", "⌁"],
+        ["27° warm", "Destination context · tap to change", "◌"],
+      ];
+      let weatherIndex = 0;
+
+      weatherDemo?.addEventListener("click", () => {
+        weatherIndex = (weatherIndex + 1) % weatherStates.length;
+        const [reading, context, icon] = weatherStates[weatherIndex];
+        weatherDemo.querySelector(".weather-reading").textContent = reading;
+        weatherDemo.querySelector("small").textContent = context;
+        weatherDemo.querySelector(".weather-icon").textContent = icon;
+      });
+
+      journeyPanel?.addEventListener("pointermove", (event) => {
+        if (reducedMotion.matches || isCompactViewport.matches) return;
+        const bounds = journeyPanel.getBoundingClientRect();
+        const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+        const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+        journeyPanel.style.setProperty("--journey-x", `${x * 6}px`);
+        journeyPanel.style.setProperty("--journey-y", `${y * 4}px`);
+      }, { passive: true });
+
+      journeyPanel?.addEventListener("pointerleave", () => {
+        journeyPanel.style.setProperty("--journey-x", "0px");
+        journeyPanel.style.setProperty("--journey-y", "0px");
+      }, { passive: true });
+
+      const reveal = (entry) => entry.target.classList.add("is-visible");
+      if (reducedMotion.matches) {
+        document.querySelectorAll(".reveal, .reveal-on-scroll, .reveal-heading, .journey-panel")
+          .forEach((element) => element.classList.add("is-visible"));
+      } else {
+        document.querySelectorAll(".hero .reveal").forEach((element) => {
+          requestAnimationFrame(() => element.classList.add("is-visible"));
+        });
+
+        const observer = new IntersectionObserver(
+          (entries, currentObserver) => {
+            entries.filter((entry) => entry.isIntersecting).forEach((entry) => {
+              reveal(entry);
+              currentObserver.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.16, rootMargin: "0px 0px -8% 0px" }
+        );
+        observedElements.forEach((element) => observer.observe(element));
+      }
+
+      updateScrollState();
+      window.addEventListener("scroll", requestScrollUpdate, { passive: true });
+      window.addEventListener("resize", requestScrollUpdate, { passive: true });
+      hero.addEventListener("pointermove", handleHeroPointer, { passive: true });
+      hero.addEventListener("pointerleave", resetHeroPointer, { passive: true });
+      reducedMotion.addEventListener?.("change", () => window.location.reload());
     </script>
   </body>
 </html>
